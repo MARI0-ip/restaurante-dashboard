@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard de Pedidos</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0f1117;
+      --surface:    #1a1d27;
+      --surface2:   #22263a;
+      --border:     #2e3347;
+      --text:       #e8eaf0;
+      --muted:      #7c82a0;
+      --orange:     #ff6b35;
+      --orange-bg:  #2a1a10;
+      --blue:       #3d9cf0;
+      --blue-bg:    #0e1f35;
+      --green:      #34d399;
+      --green-bg:   #0d2318;
+      --purple:     #a78bfa;
+      --purple-bg:  #1a1030;
+      --red:        #f87171;
+      --radius:     12px;
+      --shadow:     0 4px 20px rgba(0,0,0,.4);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ─────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 12px; }
+
+    .logo { font-size: 22px; }
+
+    .header-title h1 { font-size: 1.05rem; font-weight: 700; }
+    .header-title p  { font-size: .75rem; color: var(--muted); }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      padding: 4px 11px;
+      border-radius: 20px;
+      font-size: .76rem;
+      font-weight: 600;
+    }
+    .chip-orange { background: var(--orange-bg); color: var(--orange); }
+    .chip-blue   { background: var(--blue-bg);   color: var(--blue);   }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+    }
+    .dot.offline { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+    #reloj { font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    /* Botones header */
+    .btn-header {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--muted);
+      transition: all .15s;
+    }
+    .btn-header:hover { color: var(--text); border-color: var(--muted); }
+
+    .btn-registros {
+      background: var(--purple-bg);
+      color: var(--purple);
+      border-color: #3d2a70;
+    }
+    .btn-registros:hover { background: #231545; }
+
+    .badge-reg {
+      display: inline-block;
+      background: var(--purple);
+      color: #0a0618;
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: .7rem;
+      margin-left: 6px;
+    }
+
+    /* ── BOARD ──────────────────────────────── */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      padding: 20px;
+    }
+
+    @media (max-width: 700px) {
+      .board { grid-template-columns: 1fr; }
+    }
+
+    .columna { display: flex; flex-direction: column; gap: 12px; }
+
+    .col-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-weight: 700;
+      font-size: .88rem;
+      letter-spacing: .3px;
+    }
+
+    .col-prep .col-header { background: var(--orange-bg); color: var(--orange); border: 1px solid #3d2010; }
+    .col-cam  .col-header { background: var(--blue-bg);   color: var(--blue);   border: 1px solid #1a3860; }
+
+    .col-header .badge { margin-left: auto; background: rgba(255,255,255,.12); border-radius: 12px; padding: 2px 9px; font-size: .76rem; }
+
+    .col-cards { display: flex; flex-direction: column; gap: 10px; }
+
+    .vacia {
+      text-align: center;
+      padding: 36px 20px;
+      color: var(--muted);
+      font-size: .83rem;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+    }
+    .vacia .iv { font-size: 1.8rem; margin-bottom: 6px; }
+
+    /* ── TARJETA ────────────────────────────── */
+    .tarjeta {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow);
+      animation: aparecer .22s ease;
+      transition: transform .15s, opacity .4s;
+    }
+    .tarjeta:hover { transform: translateY(-2px); }
+    .tarjeta.archivando { opacity: 0; transform: scale(.95); }
+
+    .tarjeta[data-estado="preparacion"] { border-left: 4px solid var(--orange); }
+    .tarjeta[data-estado="camino"]      { border-left: 4px solid var(--blue); }
+
+    @keyframes aparecer {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .t-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .pid { font-size: .72rem; font-weight: 700; color: var(--muted); letter-spacing: 1px; }
+
+    .tiempo {
+      font-size: .7rem;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 2px 7px;
+      border-radius: 8px;
+    }
+    .tiempo.urgente { color: var(--red); background: rgba(248,113,113,.1); }
+
+    .cli-nombre { font-size: 1rem; font-weight: 700; margin-bottom: 3px; }
+
+    .cli-info {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .items-list {
+      list-style: none;
+      font-size: .8rem;
+      margin-bottom: 10px;
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 8px 11px;
+    }
+    .items-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .items-list li:last-child { border-bottom: none; }
+    .iq { color: var(--muted); margin-right: 5px; }
+    .ip { color: var(--muted); }
+
+    .notas {
+      font-size: .78rem;
+      background: #1e1a10;
+      border: 1px solid #3d3010;
+      color: #d4b483;
+      border-radius: 8px;
+      padding: 7px 11px;
+      margin-bottom: 10px;
+    }
+    .notas::before { content: '📝 '; }
+
+    .t-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+    }
+
+    .total { font-size: 1rem; font-weight: 700; }
+
+    .btns { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+    .btn-est {
+      padding: 4px 10px;
+      border-radius: 7px;
+      font-size: .73rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all .15s;
+      opacity: .45;
+    }
+    .btn-est:hover { opacity: 1; transform: scale(1.05); }
+    .btn-est.activo { opacity: 1; }
+
+    .be-prep { background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange); }
+    .be-cam  { background: var(--blue-bg);   color: var(--blue);   border: 1px solid var(--blue);   }
+    .be-ent  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green);  }
+
+    .btn-del {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; padding: 3px 6px; border-radius: 6px;
+      font-size: .82rem; transition: color .15s;
+    }
+    .btn-del:hover { color: var(--red); }
+
+    /* ── PANEL REGISTROS ────────────────────── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 200;
+      backdrop-filter: blur(3px);
+    }
+    .overlay.visible { display: flex; align-items: flex-start; justify-content: flex-end; }
+
+    .panel-reg {
+      background: var(--surface);
+      width: min(560px, 100vw);
+      height: 100vh;
+      overflow-y: auto;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      animation: slidePanel .25s ease;
+    }
+
+    @keyframes slidePanel {
+      from { transform: translateX(100%); }
+      to   { transform: translateX(0); }
+    }
+
+    .panel-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      z-index: 1;
+    }
+
+    .panel-header h2 { font-size: 1rem; font-weight: 700; }
+    .panel-header p  { font-size: .76rem; color: var(--muted); margin-top: 2px; }
+
+    .btn-cerrar {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); border-radius: 8px;
+      padding: 6px 12px; cursor: pointer; font-size: .82rem;
+      transition: all .15s;
+    }
+    .btn-cerrar:hover { color: var(--text); }
+
+    /* Resumen chips */
+    .resumen {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .res-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      text-align: center;
+    }
+    .res-card .rv { font-size: 1.35rem; font-weight: 800; margin-bottom: 4px; }
+    .res-card .rl { font-size: .72rem; color: var(--muted); }
+
+    .res-total  .rv { color: var(--green); }
+    .res-cnt    .rv { color: var(--blue); }
+    .res-ticket .rv { color: var(--purple); }
+
+    /* Lista de registros */
+    .reg-lista { padding: 14px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+
+    .reg-vacio {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+    .reg-vacio .rv { font-size: 2.5rem; margin-bottom: 10px; }
+
+    .reg-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--green);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      animation: aparecer .2s ease;
+    }
+
+    .ri-top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .ri-id { font-size: .7rem; color: var(--muted); font-weight: 700; letter-spacing: 1px; }
+    .ri-hora { font-size: .7rem; color: var(--muted); }
+
+    .ri-cliente { font-weight: 700; font-size: .95rem; margin-bottom: 3px; }
+
+    .ri-dir { font-size: .76rem; color: var(--muted); margin-bottom: 8px; }
+
+    .ri-items {
+      font-size: .76rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .ri-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+
+    .ri-total { font-weight: 700; color: var(--green); }
+    .ri-badge {
+      font-size: .7rem;
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid var(--green);
+      border-radius: 10px;
+      padding: 2px 8px;
+    }
+
+    /* Panel footer */
+    .panel-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      position: sticky;
+      bottom: 0;
+    }
+
+    .btn-limpiar {
+      width: 100%;
+      padding: 10px;
+      background: rgba(248,113,113,.1);
+      border: 1px solid var(--red);
+      color: var(--red);
+      border-radius: 8px;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-limpiar:hover { background: rgba(248,113,113,.2); }
+
+    /* ── TOASTS ─────────────────────────────── */
+    #toasts {
+      position: fixed; bottom: 20px; right: 20px;
+      display: flex; flex-direction: column; gap: 8px;
+      z-index: 999;
+    }
+
+    .toast {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-size: .84rem;
+      box-shadow: var(--shadow);
+      animation: slideIn .22s ease;
+      min-width: 240px;
+    }
+    .toast.ok     { border-left: 4px solid var(--green); }
+    .toast.error  { border-left: 4px solid var(--red); }
+    .toast.nuevo  { border-left: 4px solid var(--orange); }
+    .toast.arch   { border-left: 4px solid var(--purple); }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(16px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    #btn-prueba {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); padding: 6px 13px; border-radius: 8px;
+      font-size: .76rem; cursor: pointer; transition: all .15s;
+    }
+    #btn-prueba:hover { color: var(--text); border-color: var(--orange); }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────── -->
+<header>
+  <div class="header-left">
+    <span class="logo">🍽️</span>
+    <div class="header-title">
+      <h1>Dashboard de Pedidos</h1>
+      <p>Panel en tiempo real</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="chip chip-orange" id="cnt-prep">🔥 0 preparando</span>
+    <span class="chip chip-blue"   id="cnt-cam">🛵 0 en camino</span>
+    <div class="dot" id="dot" title="Conexión"></div>
+    <span id="reloj">--:--:--</span>
+    <button id="btn-prueba" onclick="pedidoPrueba()">+ Prueba</button>
+    <button class="btn-header btn-registros" onclick="abrirRegistros()">
+      📊 Registros<span class="badge-reg" id="badge-reg">0</span>
+    </button>
+  </div>
+</header>
+
+<!-- ── BOARD: 2 columnas (sin columna Entregado) ── -->
+<div class="board">
+  <!-- En Preparación -->
+  <div class="columna col-prep">
+    <div class="col-header">
+      <span>🔥</span> EN PREPARACIÓN
+      <span class="badge" id="badge-prep">0</span>
+    </div>
+    <div class="col-cards" id="col-preparacion">
+      <div class="vacia"><div class="iv">🍳</div>Sin pedidos en preparación</div>
+    </div>
+  </div>
+
+  <!-- En Camino -->
+  <div class="columna col-cam">
+    <div class="col-header">
+      <span>🛵</span> EN CAMINO
+      <span class="badge" id="badge-cam">0</span>
+    </div>
+    <div class="col-cards" id="col-camino">
+      <div class="vacia"><div class="iv">📦</div>Sin pedidos en camino</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── OVERLAY + PANEL REGISTROS ──────────────── -->
+<div class="overlay" id="overlay" onclick="cerrarSiOverlay(event)">
+  <div class="panel-reg" id="panel-reg">
+    <div class="panel-header">
+      <div>
+        <h2>📊 Registros del día</h2>
+        <p id="panel-fecha"></p>
+      </div>
+      <button class="btn-cerrar" onclick="cerrarRegistros()">✕ Cerrar</button>
+    </div>
+
+    <!-- Resumen -->
+    <div class="resumen">
+      <div class="res-card res-total">
+        <div class="rv" id="res-total">$0</div>
+        <div class="rl">Total vendido</div>
+      </div>
+      <div class="res-card res-cnt">
+        <div class="rv" id="res-cant">0</div>
+        <div class="rl">Pedidos entregados</div>
+      </div>
+      <div class="res-card res-ticket">
+        <div class="rv" id="res-ticket">$0</div>
+        <div class="rl">Ticket promedio</div>
+      </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="reg-lista" id="reg-lista">
+      <div class="reg-vacio"><div class="rv">📭</div>Aún no hay pedidos entregados hoy</div>
+    </div>
+
+    <!-- Footer -->
+    <div class="panel-footer">
+      <button class="btn-limpiar" onclick="limpiarRegistros()">🗑️ Limpiar todos los registros</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOASTS ──────────────────────────────────── -->
+<div id="toasts"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// Estado
+// ═══════════════════════════════════════════════
+const pedidos   = new Map();
+let   regDatos  = { registros: [], total_ventas: 0, cantidad: 0, ticket_prom: 0 };
+
+// ═══════════════════════════════════════════════
+// Reloj
+// ═══════════════════════════════════════════════
+const relojEl = document.getElementById('reloj');
+function tick() { relojEl.textContent = new Date().toLocaleTimeString('es-MX'); }
+tick(); setInterval(tick, 1000);
+setInterval(actualizarTiempos, 30000);
+
+// ═══════════════════════════════════════════════
+// SSE
+// ═══════════════════════════════════════════════
+const dot = document.getElementById('dot');
+
+function conectar() {
+  const sse = new EventSource('/api/eventos');
+  sse.onopen  = () => dot.classList.remove('offline');
+  sse.onerror = () => { dot.classList.add('offline'); setTimeout(conectar, 3000); };
+
+  sse.onmessage = ({ data }) => {
+    const { tipo, datos } = JSON.parse(data);
+
+    if (tipo === 'init') {
+      datos.pedidos.forEach(p => pedidos.set(p.id, p));
+      renderBoard();
+      actualizarResumen(datos.registros);
+      return;
+    }
+
+    if (tipo === 'nuevo_pedido') {
+      pedidos.set(datos.id, datos);
+      agregarTarjeta(datos);
+      actualizarContadores();
+      toast(`🆕 Nuevo pedido: ${datos.cliente}`, 'nuevo');
+      sonido();
+    }
+
+    if (tipo === 'estado_actualizado') {
+      pedidos.set(datos.id, datos);
+      moverTarjeta(datos);
+      actualizarContadores();
+    }
+
+    if (tipo === 'pedido_archivado') {
+      // Animar salida y luego quitar
+      const card = document.getElementById(`t-${datos.pedido.id}`);
+      if (card) {
+        card.classList.add('archivando');
+        setTimeout(() => {
+          card.remove();
+          pedidos.delete(datos.pedido.id);
+          actualizarVacias();
+          actualizarContadores();
+        }, 420);
+      }
+      actualizarResumen(datos.resumen);
+      toast(`✅ ${datos.pedido.cliente} — entregado y archivado`, 'arch');
+    }
+
+    if (tipo === 'pedido_eliminado') {
+      pedidos.delete(datos.id);
+      document.getElementById(`t-${datos.id}`)?.remove();
+      actualizarContadores();
+      actualizarVacias();
+    }
+
+    if (tipo === 'registros_limpiados') {
+      actualizarResumen(datos);
+      toast('🧹 Registros limpiados', 'ok');
+    }
+  };
+}
+
+conectar();
+
+// ═══════════════════════════════════════════════
+// Render Board
+// ═══════════════════════════════════════════════
+function renderBoard() {
+  document.getElementById('col-preparacion').innerHTML = '';
+  document.getElementById('col-camino').innerHTML = '';
+  pedidos.forEach(p => agregarTarjeta(p));
+  actualizarContadores();
+  actualizarVacias();
+}
+
+function agregarTarjeta(p) {
+  const colId = p.estado === 'preparacion' ? 'col-preparacion' : 'col-camino';
+  const col = document.getElementById(colId);
+  if (!col) return;
+  col.querySelectorAll('.vacia').forEach(v => v.remove());
+  document.getElementById(`t-${p.id}`)?.remove();
+  col.prepend(mkTarjeta(p));
+  actualizarVacias();
+}
+
+function moverTarjeta(p) {
+  document.getElementById(`t-${p.id}`)?.remove();
+  agregarTarjeta(p);
+}
+
+function mkTarjeta(p) {
+  const div = document.createElement('div');
+  div.className = 'tarjeta';
+  div.id = `t-${p.id}`;
+  div.dataset.estado = p.estado;
+
+  const min = Math.floor((Date.now() - new Date(p.recibido)) / 60000);
+  const tTxt = min < 1 ? 'ahora' : min === 1 ? '1 min' : `${min} min`;
+  const tCls = min > 20 ? 'urgente' : '';
+
+  const itemsH = (p.items || []).map(i =>
+    `<li><span><span class="iq">${i.cantidad||1}×</span>${esc(i.nombre||i.name||'Ítem')}</span><span class="ip">${fmt(i.precio)}</span></li>`
+  ).join('');
+
+  div.innerHTML = `
+    <div class="t-top">
+      <span class="pid">${esc(p.id)}</span>
+      <span class="tiempo ${tCls}">${tTxt}</span>
+    </div>
+    <div class="cli-nombre">${esc(p.cliente)}</div>
+    <div class="cli-info">
+      ${p.telefono  ? `<span>📞 ${esc(p.telefono)}</span>`  : ''}
+      ${p.direccion ? `<span>📍 ${esc(p.direccion)}</span>` : ''}
+    </div>
+    ${itemsH ? `<ul class="items-list">${itemsH}</ul>` : ''}
+    ${p.notas ? `<div class="notas">${esc(p.notas)}</div>` : ''}
+    <div class="t-footer">
+      <span class="total">${fmt(p.total)}</span>
+      <div class="btns">
+        <button class="btn-est be-prep ${p.estado==='preparacion'?'activo':''}" onclick="cambiarEstado('${p.id}','preparacion')">🔥 Prep.</button>
+        <button class="btn-est be-cam  ${p.estado==='camino'?'activo':''}"      onclick="cambiarEstado('${p.id}','camino')">🛵 Camino</button>
+        <button class="btn-est be-ent"                                           onclick="cambiarEstado('${p.id}','entregado')">✅ Entregado</button>
+        <button class="btn-del" onclick="eliminar('${p.id}')" title="Eliminar">🗑️</button>
+      </div>
+    </div>`;
+  return div;
+}
+
+function actualizarVacias() {
+  const cols = { preparacion: ['🍳','Sin pedidos en preparación'], camino: ['📦','Sin pedidos en camino'] };
+  Object.entries(cols).forEach(([estado, [ic, txt]]) => {
+    const col = document.getElementById(`col-${estado}`);
+    const hay = col.querySelector('.tarjeta');
+    const vacia = col.querySelector('.vacia');
+    if (!hay && !vacia) {
+      col.innerHTML = `<div class="vacia"><div class="iv">${ic}</div>${txt}</div>`;
+    } else if (hay && vacia) {
+      vacia.remove();
+    }
+  });
+}
+
+function actualizarContadores() {
+  let prep = 0, cam = 0;
+  pedidos.forEach(p => { if (p.estado==='preparacion') prep++; else if (p.estado==='camino') cam++; });
+  document.getElementById('badge-prep').textContent = prep;
+  document.getElementById('badge-cam').textContent  = cam;
+  document.getElementById('cnt-prep').textContent   = `🔥 ${prep} preparando`;
+  document.getElementById('cnt-cam').textContent    = `🛵 ${cam} en camino`;
+}
+
+function actualizarTiempos() {
+  pedidos.forEach(p => {
+    const el = document.querySelector(`#t-${p.id} .tiempo`);
+    if (!el) return;
+    const min = Math.floor((Date.now() - new Date(p.recibido)) / 60000);
+    el.textContent = min < 1 ? 'ahora' : min === 1 ? '1 min' : `${min} min`;
+    el.classList.toggle('urgente', min > 20);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// Acciones
+// ═══════════════════════════════════════════════
+async function cambiarEstado(id, estado) {
+  const r = await fetch(`/api/pedido/${id}/estado`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ estado }),
+  });
+  if (!r.ok) toast('Error al cambiar estado', 'error');
+}
+
+async function eliminar(id) {
+  if (!confirm(`¿Eliminar pedido ${id}?`)) return;
+  await fetch(`/api/pedido/${id}`, { method: 'DELETE' });
+}
+
+// ═══════════════════════════════════════════════
+// Panel Registros
+// ═══════════════════════════════════════════════
+function abrirRegistros() {
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('panel-fecha').textContent =
+    new Date().toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' });
+  renderRegistros();
+}
+
+function cerrarRegistros() {
+  document.getElementById('overlay').classList.remove('visible');
+}
+
+function cerrarSiOverlay(e) {
+  if (e.target === document.getElementById('overlay')) cerrarRegistros();
+}
+
+function actualizarResumen(res) {
+  regDatos = res;
+  document.getElementById('badge-reg').textContent  = res.cantidad;
+  document.getElementById('res-total').textContent  = fmt(res.total_ventas);
+  document.getElementById('res-cant').textContent   = res.cantidad;
+  document.getElementById('res-ticket').textContent = fmt(res.ticket_prom);
+
+  // Si el panel está abierto, re-render lista
+  if (document.getElementById('overlay').classList.contains('visible')) {
+    renderRegistros();
+  }
+}
+
+function renderRegistros() {
+  const lista = document.getElementById('reg-lista');
+  const regs  = regDatos.registros || [];
+
+  if (!regs.length) {
+    lista.innerHTML = `<div class="reg-vacio"><div class="rv">📭</div>Aún no hay pedidos entregados hoy</div>`;
+    return;
+  }
+
+  // Más reciente primero
+  lista.innerHTML = [...regs].reverse().map(p => {
+    const hora = new Date(p.entregado_en || p.actualizado).toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+    const resItems = (p.items || []).map(i => `${i.cantidad||1}× ${i.nombre||i.name||'Ítem'}`).join(' · ');
+    return `
+      <div class="reg-item">
+        <div class="ri-top">
+          <span class="ri-id">${esc(p.id)}</span>
+          <span class="ri-hora">✅ ${hora}</span>
+        </div>
+        <div class="ri-cliente">${esc(p.cliente)}</div>
+        ${p.direccion ? `<div class="ri-dir">📍 ${esc(p.direccion)}</div>` : ''}
+        ${resItems    ? `<div class="ri-items">${esc(resItems)}</div>` : ''}
+        <div class="ri-footer">
+          <span class="ri-total">${fmt(p.total)}</span>
+          <span class="ri-badge">Entregado</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function limpiarRegistros() {
+  if (!confirm('¿Limpiar todos los registros del día?')) return;
+  await fetch('/api/registros', { method: 'DELETE' });
+}
+
+// ═══════════════════════════════════════════════
+// Pedido de prueba
+// ═══════════════════════════════════════════════
+let np = 1;
+const _nombres = ['María López','Juan García','Ana Martínez','Pedro Ramírez','Sofía Hernández'];
+const _menus = [
+  [{ nombre:'Pizza Margarita', cantidad:1, precio:180 },{ nombre:'Refresco', cantidad:2, precio:30 }],
+  [{ nombre:'Hamburguesa Doble', cantidad:2, precio:120 },{ nombre:'Papas Fritas', cantidad:2, precio:45 }],
+  [{ nombre:'Sushi Variado (8 pzs)', cantidad:1, precio:220 },{ nombre:'Agua Mineral', cantidad:1, precio:25 }],
+  [{ nombre:'Tacos al Pastor', cantidad:4, precio:25 },{ nombre:'Agua de Jamaica', cantidad:1, precio:35 }],
+  [{ nombre:'Enchiladas Verdes', cantidad:2, precio:95 },{ nombre:'Agua Fresca', cantidad:2, precio:28 }],
+];
+
+async function pedidoPrueba() {
+  const i = (np - 1) % 5;
+  const items = _menus[i];
+  const total = items.reduce((s, x) => s + x.precio * x.cantidad, 0);
+  await fetch('/api/pedido', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cliente:   _nombres[i],
+      telefono:  `555-${String(1000+np).padStart(4,'0')}`,
+      direccion: `Av. Ejemplo ${np*10}, Col. Centro`,
+      items, total,
+      notas: np % 3 === 0 ? 'Sin picante por favor' : '',
+    }),
+  });
+  np++;
+}
+
+// ═══════════════════════════════════════════════
+// Toast & Sonido
+// ═══════════════════════════════════════════════
+function toast(msg, tipo = 'ok') {
+  const d = document.createElement('div');
+  d.className = `toast ${tipo}`;
+  d.textContent = msg;
+  document.getElementById('toasts').appendChild(d);
+  setTimeout(() => d.remove(), 3500);
+}
+
+function sonido() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [660,880,1100].forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = f; o.type = 'sine';
+      g.gain.setValueAtTime(0.12, ctx.currentTime + i*.12);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*.12 + .18);
+      o.start(ctx.currentTime + i*.12);
+      o.stop(ctx.currentTime + i*.12 + .2);
+    });
+  } catch(_){}
+}
+
+// ═══════════════════════════════════════════════
+// Helpers
+// ═══════════════════════════════════════════════
+function fmt(n) {
+  if (n === undefined || n === null || n === '') return '';
+  return `$${Number(n).toLocaleString('es-MX', { minimumFractionDigits: 0 })}`;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
