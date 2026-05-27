@@ -475,6 +475,7 @@
     <div class="dot" id="dot" title="Conexión"></div>
     <span id="reloj">--:--:--</span>
     <button id="btn-prueba" onclick="pedidoPrueba()">+ Prueba</button>
+    <button class="btn-header" onclick="cerrarSesion()" style="color:#f87171;border-color:#f87171" title="Cerrar sesión">⏻</button>
     <button class="btn-header btn-registros" onclick="abrirRegistros()">
       📊 Registros<span class="badge-reg" id="badge-reg">0</span>
     </button>
@@ -556,6 +557,22 @@ const pedidos   = new Map();
 let   regDatos  = { registros: [], total_ventas: 0, cantidad: 0, ticket_prom: 0 };
 
 // ═══════════════════════════════════════════════
+// Auth — usa cookie HttpOnly (el navegador la envía automáticamente)
+// No necesitamos manejar tokens en JS
+// ═══════════════════════════════════════════════
+async function apiFetch(url, opts = {}) {
+  const r = await fetch(url, { ...opts, credentials: 'include' });
+  if (r.status === 401) { window.location.href = '/login'; }
+  return r;
+}
+
+// Botón de cerrar sesión
+async function cerrarSesion() {
+  await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+  window.location.href = '/login';
+}
+
+// ═══════════════════════════════════════════════
 // Reloj
 // ═══════════════════════════════════════════════
 const relojEl = document.getElementById('reloj');
@@ -569,7 +586,7 @@ setInterval(actualizarTiempos, 30000);
 const dot = document.getElementById('dot');
 
 function conectar() {
-  const sse = new EventSource('/api/eventos');
+  const sse = new EventSource('/api/eventos', { withCredentials: true });
   sse.onopen  = () => dot.classList.remove('offline');
   sse.onerror = () => { dot.classList.add('offline'); setTimeout(conectar, 3000); };
 
@@ -730,7 +747,7 @@ function actualizarTiempos() {
 // Acciones
 // ═══════════════════════════════════════════════
 async function cambiarEstado(id, estado) {
-  const r = await fetch(`/api/pedido/${id}/estado`, {
+  const r = await apiFetch(`/api/pedido/${id}/estado`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ estado }),
@@ -740,7 +757,7 @@ async function cambiarEstado(id, estado) {
 
 async function eliminar(id) {
   if (!confirm(`¿Eliminar pedido ${id}?`)) return;
-  await fetch(`/api/pedido/${id}`, { method: 'DELETE' });
+  await apiFetch(`/api/pedido/${id}`, { method: 'DELETE' });
 }
 
 // ═══════════════════════════════════════════════
@@ -806,7 +823,7 @@ function renderRegistros() {
 
 async function limpiarRegistros() {
   if (!confirm('¿Limpiar todos los registros del día?')) return;
-  await fetch('/api/registros', { method: 'DELETE' });
+  await apiFetch('/api/registros', { method: 'DELETE' });
 }
 
 // ═══════════════════════════════════════════════
