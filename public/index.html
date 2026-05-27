@@ -69,6 +69,7 @@
       font-size: .76rem;
       font-weight: 600;
     }
+    .chip-yellow { background: var(--yellow-bg); color: var(--yellow); }
     .chip-orange { background: var(--orange-bg); color: var(--orange); }
     .chip-blue   { background: var(--blue-bg);   color: var(--blue);   }
 
@@ -116,12 +117,15 @@
     /* ── BOARD ──────────────────────────────── */
     .board {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 18px;
       padding: 20px;
     }
 
-    @media (max-width: 700px) {
+    @media (max-width: 900px) {
+      .board { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
       .board { grid-template-columns: 1fr; }
     }
 
@@ -138,8 +142,12 @@
       letter-spacing: .3px;
     }
 
-    .col-prep .col-header { background: var(--orange-bg); color: var(--orange); border: 1px solid #3d2010; }
-    .col-cam  .col-header { background: var(--blue-bg);   color: var(--blue);   border: 1px solid #1a3860; }
+    --yellow:    #fbbf24;
+    --yellow-bg: #2a1f05;
+
+    .col-nuevo .col-header { background: var(--yellow-bg); color: var(--yellow); border: 1px solid #3d2e05; }
+    .col-prep  .col-header { background: var(--orange-bg); color: var(--orange); border: 1px solid #3d2010; }
+    .col-cam   .col-header { background: var(--blue-bg);   color: var(--blue);   border: 1px solid #1a3860; }
 
     .col-header .badge { margin-left: auto; background: rgba(255,255,255,.12); border-radius: 12px; padding: 2px 9px; font-size: .76rem; }
 
@@ -168,6 +176,7 @@
     .tarjeta:hover { transform: translateY(-2px); }
     .tarjeta.archivando { opacity: 0; transform: scale(.95); }
 
+    .tarjeta[data-estado="nuevo"]        { border-left: 4px solid var(--yellow); }
     .tarjeta[data-estado="preparacion"] { border-left: 4px solid var(--orange); }
     .tarjeta[data-estado="camino"]      { border-left: 4px solid var(--blue); }
 
@@ -259,9 +268,10 @@
     .btn-est:hover { opacity: 1; transform: scale(1.05); }
     .btn-est.activo { opacity: 1; }
 
-    .be-prep { background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange); }
-    .be-cam  { background: var(--blue-bg);   color: var(--blue);   border: 1px solid var(--blue);   }
-    .be-ent  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green);  }
+    .be-nuevo { background: var(--yellow-bg); color: var(--yellow); border: 1px solid var(--yellow); }
+    .be-prep  { background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange); }
+    .be-cam   { background: var(--blue-bg);   color: var(--blue);   border: 1px solid var(--blue);   }
+    .be-ent   { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green);  }
 
     .btn-del {
       background: none; border: none; color: var(--muted);
@@ -470,6 +480,7 @@
     </div>
   </div>
   <div class="header-right">
+    <span class="chip chip-yellow" id="cnt-nuevo">🆕 0 nuevos</span>
     <span class="chip chip-orange" id="cnt-prep">🔥 0 preparando</span>
     <span class="chip chip-blue"   id="cnt-cam">🛵 0 en camino</span>
     <div class="dot" id="dot" title="Conexión"></div>
@@ -482,8 +493,19 @@
   </div>
 </header>
 
-<!-- ── BOARD: 2 columnas (sin columna Entregado) ── -->
+<!-- ── BOARD: 3 columnas ── -->
 <div class="board">
+  <!-- Nuevo Pedido -->
+  <div class="columna col-nuevo">
+    <div class="col-header">
+      <span>🆕</span> NUEVO PEDIDO
+      <span class="badge" id="badge-nuevo">0</span>
+    </div>
+    <div class="col-cards" id="col-nuevo">
+      <div class="vacia"><div class="iv">📋</div>Sin pedidos nuevos</div>
+    </div>
+  </div>
+
   <!-- En Preparación -->
   <div class="columna col-prep">
     <div class="col-header">
@@ -650,6 +672,7 @@ conectar();
 // Render Board
 // ═══════════════════════════════════════════════
 function renderBoard() {
+  document.getElementById('col-nuevo').innerHTML = '';
   document.getElementById('col-preparacion').innerHTML = '';
   document.getElementById('col-camino').innerHTML = '';
   pedidos.forEach(p => agregarTarjeta(p));
@@ -658,7 +681,8 @@ function renderBoard() {
 }
 
 function agregarTarjeta(p) {
-  const colId = p.estado === 'preparacion' ? 'col-preparacion' : 'col-camino';
+  const colMap = { nuevo: 'col-nuevo', preparacion: 'col-preparacion', camino: 'col-camino' };
+  const colId = colMap[p.estado] || 'col-nuevo';
   const col = document.getElementById(colId);
   if (!col) return;
   col.querySelectorAll('.vacia').forEach(v => v.remove());
@@ -701,6 +725,7 @@ function mkTarjeta(p) {
     <div class="t-footer">
       <span class="total">${fmt(p.total)}</span>
       <div class="btns">
+        <button class="btn-est be-nuevo ${p.estado==='nuevo'?'activo':''}"       onclick="cambiarEstado('${p.id}','nuevo')">🆕 Nuevo</button>
         <button class="btn-est be-prep ${p.estado==='preparacion'?'activo':''}" onclick="cambiarEstado('${p.id}','preparacion')">🔥 Prep.</button>
         <button class="btn-est be-cam  ${p.estado==='camino'?'activo':''}"      onclick="cambiarEstado('${p.id}','camino')">🛵 Camino</button>
         <button class="btn-est be-ent"                                           onclick="cambiarEstado('${p.id}','entregado')">✅ Entregado</button>
@@ -711,7 +736,11 @@ function mkTarjeta(p) {
 }
 
 function actualizarVacias() {
-  const cols = { preparacion: ['🍳','Sin pedidos en preparación'], camino: ['📦','Sin pedidos en camino'] };
+  const cols = {
+    nuevo:       ['📋', 'Sin pedidos nuevos'],
+    preparacion: ['🍳', 'Sin pedidos en preparación'],
+    camino:      ['📦', 'Sin pedidos en camino'],
+  };
   Object.entries(cols).forEach(([estado, [ic, txt]]) => {
     const col = document.getElementById(`col-${estado}`);
     const hay = col.querySelector('.tarjeta');
@@ -725,12 +754,18 @@ function actualizarVacias() {
 }
 
 function actualizarContadores() {
-  let prep = 0, cam = 0;
-  pedidos.forEach(p => { if (p.estado==='preparacion') prep++; else if (p.estado==='camino') cam++; });
-  document.getElementById('badge-prep').textContent = prep;
-  document.getElementById('badge-cam').textContent  = cam;
-  document.getElementById('cnt-prep').textContent   = `🔥 ${prep} preparando`;
-  document.getElementById('cnt-cam').textContent    = `🛵 ${cam} en camino`;
+  let nvo = 0, prep = 0, cam = 0;
+  pedidos.forEach(p => {
+    if (p.estado==='nuevo') nvo++;
+    else if (p.estado==='preparacion') prep++;
+    else if (p.estado==='camino') cam++;
+  });
+  document.getElementById('badge-nuevo').textContent = nvo;
+  document.getElementById('badge-prep').textContent  = prep;
+  document.getElementById('badge-cam').textContent   = cam;
+  document.getElementById('cnt-nuevo').textContent   = `🆕 ${nvo} nuevos`;
+  document.getElementById('cnt-prep').textContent    = `🔥 ${prep} preparando`;
+  document.getElementById('cnt-cam').textContent     = `🛵 ${cam} en camino`;
 }
 
 function actualizarTiempos() {

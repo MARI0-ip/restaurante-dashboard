@@ -387,7 +387,7 @@ app.post('/api/pedido', (req, res) => {
     items:       d.items || d.productos || [],
     total:       d.total || d.monto || calcularTotal(d.items || d.productos || []),
     notas:       d.notas || d.observaciones || '',
-    estado:      'preparacion',
+    estado:      'nuevo',
     recibido:    new Date().toISOString(),
     actualizado: new Date().toISOString(),
   };
@@ -406,7 +406,7 @@ app.put('/api/pedido/:id/estado', async (req, res) => {
   const { id } = req.params;
   const { estado } = req.body;
 
-  const estadosValidos = ['preparacion', 'camino', 'entregado'];
+  const estadosValidos = ['nuevo', 'preparacion', 'camino', 'entregado'];
   if (!estadosValidos.includes(estado)) {
     return res.status(400).json({ error: `Estado inválido. Usar: ${estadosValidos.join(', ')}` });
   }
