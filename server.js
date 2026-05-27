@@ -390,6 +390,7 @@ app.post('/api/pedido', (req, res) => {
     estado:      'nuevo',
     recibido:    new Date().toISOString(),
     actualizado: new Date().toISOString(),
+    historial:   [{ estado: 'nuevo', desde: new Date().toISOString() }],
   };
 
   pedidos.set(id, pedido);
@@ -416,6 +417,8 @@ app.put('/api/pedido/:id/estado', async (req, res) => {
 
   pedido.estado      = estado;
   pedido.actualizado = new Date().toISOString();
+  pedido.historial   = pedido.historial || [];
+  pedido.historial.push({ estado, desde: pedido.actualizado });
 
   if (estado === 'entregado') {
     pedido.entregado_en = new Date().toISOString();

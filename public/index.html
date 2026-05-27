@@ -273,6 +273,40 @@
     .be-cam   { background: var(--blue-bg);   color: var(--blue);   border: 1px solid var(--blue);   }
     .be-ent   { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green);  }
 
+    /* ── Timeline de etapas ── */
+    .timeline {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+      font-size: .70rem;
+      margin-bottom: 10px;
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 7px 10px;
+    }
+
+    .etapa {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      color: var(--muted);
+    }
+
+    .etapa.actual {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .etapa-sep { color: var(--border); margin: 0 2px; }
+
+    .timeline-total {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: .68rem;
+      white-space: nowrap;
+    }
+
     .btn-del {
       background: none; border: none; color: var(--muted);
       cursor: pointer; padding: 3px 6px; border-radius: 6px;
@@ -713,13 +747,14 @@ function mkTarjeta(p) {
   div.innerHTML = `
     <div class="t-top">
       <span class="pid">${esc(p.id)}</span>
-      <span class="tiempo ${tCls}">${tTxt}</span>
+      <span class="tiempo ${tCls}">⏰ ${tTxt}</span>
     </div>
     <div class="cli-nombre">${esc(p.cliente)}</div>
     <div class="cli-info">
       ${p.telefono  ? `<span>📞 ${esc(p.telefono)}</span>`  : ''}
       ${p.direccion ? `<span>📍 ${esc(p.direccion)}</span>` : ''}
     </div>
+    ${renderTimeline(p)}
     ${itemsH ? `<ul class="items-list">${itemsH}</ul>` : ''}
     ${p.notas ? `<div class="notas">${esc(p.notas)}</div>` : ''}
     <div class="t-footer">
@@ -921,6 +956,50 @@ function sonido() {
 // ═══════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+// Timeline de etapas
+// ═══════════════════════════════════════════════
+const ETAPA_ICON  = { nuevo: '🆕', preparacion: '🔥', camino: '🛵' };
+const ETAPA_LABEL = { nuevo: 'Nuevo', preparacion: 'Prep.', camino: 'Camino' };
+
+function renderTimeline(p) {
+  const hist = p.historial;
+  if (!hist || hist.length === 0) return '';
+
+  const ahora = Date.now();
+  let totalMs = 0;
+
+  const etapasHTML = hist.map((h, i) => {
+    const finTs  = hist[i + 1] ? new Date(hist[i + 1].desde).getTime() : ahora;
+    const durMs  = finTs - new Date(h.desde).getTime();
+    totalMs     += durMs;
+    const durMin = Math.floor(durMs / 60000);
+    const esActual = i === hist.length - 1;
+    const durTxt = durMin < 1 ? '<1min' : `${durMin}min`;
+    const sep = i < hist.length - 1 ? '<span class="etapa-sep">→</span>' : '';
+
+    return `
+      <span class="etapa ${esActual ? 'actual' : ''}">
+        ${ETAPA_ICON[h.estado] || '•'} ${durTxt}
+      </span>${sep}`;
+  }).join('');
+
+  const totalMin = Math.floor(totalMs / 60000);
+  const totalTxt = totalMin < 1 ? '<1min' : `${totalMin}min`;
+
+  return `<div class="timeline" id="tl-${p.id}">${etapasHTML}<span class="timeline-total">⏱️ ${totalTxt} total</span></div>`;
+}
+
+function actualizarTimelines() {
+  pedidos.forEach(p => {
+    const el = document.getElementById(`tl-${p.id}`);
+    if (!el) return;
+    const nuevo = renderTimeline(p);
+    if (nuevo) el.outerHTML = nuevo;
+  });
+}
+setInterval(actualizarTimelines, 30000);
+
 function fmt(n) {
   if (n === undefined || n === null || n === '') return '';
   return `$${Number(n).toLocaleString('es-MX', { minimumFractionDigits: 0 })}`;
