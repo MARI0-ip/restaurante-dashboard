@@ -16,7 +16,7 @@ const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || '';
 
 // Clave secreta para firmar JWT (se genera automáticamente si no está en .env)
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
-const JWT_EXPIRY = '8h'; // sesión dura 8 horas
+const JWT_EXPIRY = '30d'; // sesión dura 30 días (ideal para tablet en mostrador)
 
 // ──────────────────────────────────────────────
 // Middleware base
@@ -214,7 +214,7 @@ app.post('/api/login', (req, res) => {
       httpOnly: true,
       secure:   req.secure || req.headers['x-forwarded-proto'] === 'https',
       sameSite: 'Strict',
-      maxAge:   8 * 60 * 60 * 1000, // 8 horas en ms
+      maxAge:   30 * 24 * 60 * 60 * 1000, // 30 días en ms
     });
     return res.json({ ok: true });
   }
@@ -247,7 +247,7 @@ app.post('/api/login', (req, res) => {
     httpOnly: true,                                                   // inaccesible desde JS
     secure:   req.secure || req.headers['x-forwarded-proto'] === 'https', // solo HTTPS
     sameSite: 'Strict',                                               // anti-CSRF
-    maxAge:   8 * 60 * 60 * 1000,                                    // 8 horas
+    maxAge:   30 * 24 * 60 * 60 * 1000,                              // 30 días (tablet mostrador)
   });
 
   console.log(`✅ Login exitoso desde ${ip}`);
