@@ -270,7 +270,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ──────────────────────────────────────────────
 // Persistencia en archivo JSON
 // ──────────────────────────────────────────────
-const DATA_FILE = path.join(__dirname, 'data.json');
+const DATA_DIR  = process.env.DATA_DIR || __dirname;
+const DATA_FILE = path.join(DATA_DIR, 'data.json');
 
 function cargarDatos() {
   try {
