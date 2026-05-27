@@ -367,7 +367,7 @@
     /* Resumen chips */
     .resumen {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 12px;
       padding: 16px 20px;
       border-bottom: 1px solid var(--border);
@@ -386,6 +386,7 @@
     .res-total  .rv { color: var(--green); }
     .res-cnt    .rv { color: var(--blue); }
     .res-ticket .rv { color: var(--purple); }
+    .res-tiempo .rv { color: var(--orange); }
 
     /* Lista de registros */
     .reg-lista { padding: 14px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
@@ -587,6 +588,10 @@
       <div class="res-card res-ticket">
         <div class="rv" id="res-ticket">$0</div>
         <div class="rl">Ticket promedio</div>
+      </div>
+      <div class="res-card res-tiempo">
+        <div class="rv" id="res-tiempo">—</div>
+        <div class="rl">Tiempo promedio de entrega</div>
       </div>
     </div>
 
@@ -854,6 +859,10 @@ function actualizarResumen(res) {
   document.getElementById('res-total').textContent  = fmt(res.total_ventas);
   document.getElementById('res-cant').textContent   = res.cantidad;
   document.getElementById('res-ticket').textContent = fmt(res.ticket_prom);
+  const tp = res.tiempo_prom_min;
+  document.getElementById('res-tiempo').textContent = tp > 0
+    ? (tp >= 60 ? `${Math.floor(tp/60)}h ${tp%60}min` : `${tp} min`)
+    : '—';
 
   // Si el panel está abierto, re-render lista
   if (document.getElementById('overlay').classList.contains('visible')) {

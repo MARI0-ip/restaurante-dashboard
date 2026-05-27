@@ -473,7 +473,15 @@ function resumenRegistros() {
   const total_ventas = registros.reduce((s, p) => s + (p.total || 0), 0);
   const cantidad     = registros.length;
   const ticket_prom  = cantidad > 0 ? Math.round(total_ventas / cantidad) : 0;
-  return { registros, total_ventas, cantidad, ticket_prom };
+
+  // Tiempo promedio de entrega (desde recibido hasta entregado_en)
+  const tiempos = registros
+    .filter(p => p.recibido && p.entregado_en)
+    .map(p => new Date(p.entregado_en) - new Date(p.recibido));
+  const tiempo_prom_ms  = tiempos.length > 0 ? tiempos.reduce((s, t) => s + t, 0) / tiempos.length : 0;
+  const tiempo_prom_min = Math.round(tiempo_prom_ms / 60000);
+
+  return { registros, total_ventas, cantidad, ticket_prom, tiempo_prom_min };
 }
 
 // ──────────────────────────────────────────────
