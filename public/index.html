@@ -874,6 +874,23 @@ function renderRegistros() {
   lista.innerHTML = [...regs].reverse().map(p => {
     const hora = new Date(p.entregado_en || p.actualizado).toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
     const resItems = (p.items || []).map(i => `${i.cantidad||1}× ${i.nombre||i.name||'Ítem'}`).join(' · ');
+
+    // Timeline completo del pedido (incluyendo entregado)
+    const hist = [...(p.historial || []), { estado: 'entregado', desde: p.entregado_en || p.actualizado }];
+    let totalMs = 0;
+    const etapasHTML = hist.map((h, i) => {
+      const finTs  = hist[i + 1] ? new Date(hist[i + 1].desde).getTime() : new Date(p.entregado_en || p.actualizado).getTime();
+      const durMs  = Math.max(0, finTs - new Date(h.desde).getTime());
+      totalMs     += durMs;
+      const durMin = Math.floor(durMs / 60000);
+      const icons  = { nuevo: '🆕', preparacion: '🔥', camino: '🛵', entregado: '✅' };
+      const sep    = i < hist.length - 1 ? '<span style="color:#2e3347;margin:0 2px">→</span>' : '';
+      const durTxt = durMin < 1 ? '<1min' : `${durMin}min`;
+      return `<span style="color:#7c82a0;font-size:.68rem">${icons[h.estado]||'•'} ${durTxt}</span>${sep}`;
+    }).join('');
+    const totalMin = Math.floor(totalMs / 60000);
+    const totalTxt = totalMin < 1 ? '<1min' : `${totalMin}min`;
+
     return `
       <div class="reg-item">
         <div class="ri-top">
@@ -883,6 +900,10 @@ function renderRegistros() {
         <div class="ri-cliente">${esc(p.cliente)}</div>
         ${p.direccion ? `<div class="ri-dir">📍 ${esc(p.direccion)}</div>` : ''}
         ${resItems    ? `<div class="ri-items">${esc(resItems)}</div>` : ''}
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;background:#0f1117;border-radius:6px;padding:6px 10px;margin-bottom:8px">
+          ${etapasHTML}
+          <span style="margin-left:auto;color:#7c82a0;font-size:.68rem">⏱️ ${totalTxt} total</span>
+        </div>
         <div class="ri-footer">
           <span class="ri-total">${fmt(p.total)}</span>
           <span class="ri-badge">Entregado</span>
