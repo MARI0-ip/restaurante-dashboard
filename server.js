@@ -5,6 +5,7 @@ const path         = require('path');
 const crypto       = require('crypto');
 const jwt          = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const fs           = require('fs');
 
 const app = express();
 const PORT               = process.env.PORT               || 3001;
@@ -267,11 +268,48 @@ app.post('/api/logout', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ──────────────────────────────────────────────
-// Almacenamiento en memoria
+// Persistencia en archivo JSON
 // ──────────────────────────────────────────────
-const pedidos   = new Map();
-const registros = [];
-let contadorId  = 1;
+const DATA_FILE = path.join(__dirname, 'data.json');
+
+function cargarDatos() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const raw = fs.readFileSync(DATA_FILE, 'utf8');
+      const data = JSON.parse(raw);
+      console.log(`📂 Datos cargados: ${data.pedidos?.length || 0} pedidos, ${data.registros?.length || 0} registros`);
+      return data;
+    }
+  } catch (err) {
+    console.warn('⚠️  No se pudieron cargar los datos guardados:', err.message);
+  }
+  return { pedidos: [], registros: [], contadorId: 1 };
+}
+
+let guardadoPendiente = null;
+function guardarDatos() {
+  // Debounce: espera 500ms antes de escribir para no golpear el disco en cada cambio
+  if (guardadoPendiente) clearTimeout(guardadoPendiente);
+  guardadoPendiente = setTimeout(() => {
+    try {
+      const data = {
+        pedidos:    Array.from(pedidos.values()),
+        registros,
+        contadorId,
+        guardado:   new Date().toISOString(),
+      };
+      fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (err) {
+      console.error('❌ Error guardando datos:', err.message);
+    }
+  }, 500);
+}
+
+// Cargar datos al iniciar
+const datosIniciales = cargarDatos();
+const pedidos   = new Map(datosIniciales.pedidos.map(p => [p.id, p]));
+const registros = datosIniciales.registros || [];
+let contadorId  = datosIniciales.contadorId || 1;
 
 // ──────────────────────────────────────────────
 // SSE — tiempo real
@@ -317,6 +355,7 @@ app.get('/api/registros', (req, res) => {
 // ──────────────────────────────────────────────
 app.delete('/api/registros', (req, res) => {
   registros.length = 0;
+  guardarDatos();
   enviarEvento('registros_limpiados', resumenRegistros());
   console.log('🧹 Registros limpiados');
   res.json({ ok: true });
@@ -353,6 +392,7 @@ app.post('/api/pedido', (req, res) => {
   };
 
   pedidos.set(id, pedido);
+  guardarDatos();
   enviarEvento('nuevo_pedido', pedido);
   console.log(`✅ Pedido recibido: ${id} para ${pedido.cliente}`);
   res.status(201).json({ ok: true, pedido_id: id, pedido });
@@ -380,10 +420,12 @@ app.put('/api/pedido/:id/estado', async (req, res) => {
     pedido.entregado_en = new Date().toISOString();
     registros.push({ ...pedido });
     pedidos.delete(id);
+    guardarDatos();
     enviarEvento('pedido_archivado', { pedido, resumen: resumenRegistros() });
     console.log(`📦 Pedido ${id} archivado`);
   } else {
     pedidos.set(id, pedido);
+    guardarDatos();
     enviarEvento('estado_actualizado', pedido);
     console.log(`🔄 Pedido ${id} → ${estado}`);
   }
@@ -411,6 +453,7 @@ app.delete('/api/pedido/:id', (req, res) => {
   const { id } = req.params;
   if (!pedidos.has(id)) return res.status(404).json({ error: 'Pedido no encontrado' });
   pedidos.delete(id);
+  guardarDatos();
   enviarEvento('pedido_eliminado', { id });
   res.json({ ok: true });
 });
