@@ -884,15 +884,16 @@ function renderRegistros() {
     const hora = new Date(p.entregado_en || p.actualizado).toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
     const resItems = (p.items || []).map(i => `${i.cantidad||1}× ${i.nombre||i.name||'Ítem'}`).join(' · ');
 
-    // Timeline completo del pedido (incluyendo entregado)
-    const hist = [...(p.historial || []), { estado: 'entregado', desde: p.entregado_en || p.actualizado }];
-    let totalMs = 0;
+    // Timeline — solo etapas activas (sin 'entregado' que no tiene duración real)
+    const hist = (p.historial || []).filter(h => h.estado !== 'entregado');
+    const finTotal = new Date(p.entregado_en || p.actualizado).getTime();
+    let totalMs = Math.max(0, finTotal - new Date(p.recibido).getTime());
+    const icons = { nuevo: '🆕', preparacion: '🔥', camino: '🛵' };
+
     const etapasHTML = hist.map((h, i) => {
-      const finTs  = hist[i + 1] ? new Date(hist[i + 1].desde).getTime() : new Date(p.entregado_en || p.actualizado).getTime();
+      const finTs  = hist[i + 1] ? new Date(hist[i + 1].desde).getTime() : finTotal;
       const durMs  = Math.max(0, finTs - new Date(h.desde).getTime());
-      totalMs     += durMs;
       const durMin = Math.floor(durMs / 60000);
-      const icons  = { nuevo: '🆕', preparacion: '🔥', camino: '🛵', entregado: '✅' };
       const sep    = i < hist.length - 1 ? '<span style="color:#2e3347;margin:0 2px">→</span>' : '';
       const durTxt = durMin < 1 ? '<1min' : `${durMin}min`;
       return `<span style="color:#7c82a0;font-size:.68rem">${icons[h.estado]||'•'} ${durTxt}</span>${sep}`;
