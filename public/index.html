@@ -872,17 +872,20 @@ setInterval(actualizarTiempos, 30000);
 const dot = document.getElementById('dot');
 
 let sseActual = null;
+let _reconectarTimer = null;
 
 function conectar() {
+  if (_reconectarTimer) { clearTimeout(_reconectarTimer); _reconectarTimer = null; }
   if (sseActual) { sseActual.close(); sseActual = null; }
   const sse = new EventSource('/api/eventos', { withCredentials: true });
   sseActual = sse;
   sse.onopen  = () => dot.classList.remove('offline');
   sse.onerror = () => {
     dot.classList.add('offline');
-    sseActual = null;
-    sse.close();
-    setTimeout(conectar, 3000);
+    if (sseActual === sse) { sseActual = null; sse.close(); }
+    if (!_reconectarTimer) {
+      _reconectarTimer = setTimeout(() => { _reconectarTimer = null; conectar(); }, 3000);
+    }
   };
 
   sse.onmessage = ({ data }) => {
@@ -1221,7 +1224,11 @@ setInterval(actualizarTimelines, 30000);
 // ═══════════════════════════════════════════════
 // Toast & Sonido
 // ═══════════════════════════════════════════════
+const _toastsRecientes = new Map();
 function toast(msg, tipo = 'ok') {
+  const ahora = Date.now();
+  if (ahora - (_toastsRecientes.get(msg) || 0) < 2000) return; // ignorar duplicados
+  _toastsRecientes.set(msg, ahora);
   const d = document.createElement('div');
   d.className = `toast ${tipo}`;
   d.textContent = msg;
