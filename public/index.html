@@ -888,6 +888,15 @@ function conectar() {
     }
   };
 
+  // Deduplicación de eventos: ignora el mismo evento si llega varias veces en 5s
+  const _vistos = new Set();
+  function yaVisto(clave) {
+    if (_vistos.has(clave)) return true;
+    _vistos.add(clave);
+    setTimeout(() => _vistos.delete(clave), 5000);
+    return false;
+  }
+
   sse.onmessage = ({ data }) => {
     const { tipo, datos } = JSON.parse(data);
 
@@ -898,6 +907,7 @@ function conectar() {
       return;
     }
     if (tipo === 'nuevo_pedido') {
+      if (yaVisto(`nuevo:${datos.id}`)) return;
       pedidos.set(datos.id, datos);
       agregarTarjeta(datos);
       actualizarContadores();
@@ -905,11 +915,13 @@ function conectar() {
       sonido();
     }
     if (tipo === 'estado_actualizado') {
+      if (yaVisto(`est:${datos.id}:${datos.estado}`)) return;
       pedidos.set(datos.id, datos);
       moverTarjeta(datos);
       actualizarContadores();
     }
     if (tipo === 'pedido_archivado') {
+      if (yaVisto(`arch:${datos.pedido.id}`)) return;
       const card = document.getElementById(`t-${datos.pedido.id}`);
       if (card) {
         card.classList.add('archivando');
@@ -924,6 +936,7 @@ function conectar() {
       toast(`✅ ${datos.pedido.cliente} — entregado y archivado`, 'arch');
     }
     if (tipo === 'pedido_eliminado') {
+      if (yaVisto(`del:${datos.id}`)) return;
       pedidos.delete(datos.id);
       document.getElementById(`t-${datos.id}`)?.remove();
       actualizarContadores();
