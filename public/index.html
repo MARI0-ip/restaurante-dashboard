@@ -874,6 +874,15 @@ const dot = document.getElementById('dot');
 let sseActual = null;
 let _reconectarTimer = null;
 
+// Deduplicación global: persiste entre reconexiones SSE
+const _vistos = new Map();
+function yaVisto(clave) {
+  const ahora = Date.now();
+  if (ahora - (_vistos.get(clave) || 0) < 5000) return true;
+  _vistos.set(clave, ahora);
+  return false;
+}
+
 function conectar() {
   if (_reconectarTimer) { clearTimeout(_reconectarTimer); _reconectarTimer = null; }
   if (sseActual) { sseActual.close(); sseActual = null; }
@@ -888,17 +897,13 @@ function conectar() {
     }
   };
 
-  // Deduplicación de eventos: ignora el mismo evento si llega varias veces en 5s
-  const _vistos = new Set();
-  function yaVisto(clave) {
-    if (_vistos.has(clave)) return true;
-    _vistos.add(clave);
-    setTimeout(() => _vistos.delete(clave), 5000);
-    return false;
-  }
-
   sse.onmessage = ({ data }) => {
-    const { tipo, datos } = JSON.parse(data);
+    let tipo, datos;
+    try {
+      ({ tipo, datos } = JSON.parse(data));
+    } catch (e) {
+      return; // dato no JSON (heartbeat, etc.) — ignorar sin romper el handler
+    }
 
     if (tipo === 'init') {
       datos.pedidos.forEach(p => pedidos.set(p.id, p));
@@ -1183,7 +1188,7 @@ async function pedidoPrueba() {
   const i = (np-1) % 5;
   const items = _menus[i];
   const total = items.reduce((s,x) => s + x.precio * x.cantidad, 0);
-  await fetch('/api/pedido', {
+  await apiFetch('/api/pedido', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({

@@ -14,7 +14,8 @@ const N8N_WEBHOOK_ESTADO = process.env.N8N_WEBHOOK_ESTADO || '';
 const WEBHOOK_SECRET     = process.env.WEBHOOK_SECRET     || '';
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || '';
 
-// Clave secreta para firmar JWT (se genera automáticamente si no está en .env)
+// JWT_SECRET DEBE estar en .env — si no, se regenera en cada reinicio e invalida todas las sesiones
+if (!process.env.JWT_SECRET) console.warn('⚠️  JWT_SECRET no configurado: las sesiones se perderán al reiniciar el servidor');
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '30d'; // sesión dura 30 días (ideal para tablet en mostrador)
 
@@ -492,7 +493,7 @@ app.listen(PORT, () => {
   console.log(`🍽️  Dashboard de ${NOMBRE_RESTAURANTE}`);
   console.log(`   http://localhost:${PORT}`);
   if (DASHBOARD_PASSWORD) {
-    console.log(`   🔐 Autenticación activa (JWT 8h, rate limit ${MAX_INTENTOS} intentos)`);
+    console.log(`   🔐 Autenticación activa (JWT 30d, rate limit ${MAX_INTENTOS} intentos)`);
   } else {
     console.log(`   ⚠️  Sin contraseña — agrega DASHBOARD_PASSWORD al .env`);
   }
