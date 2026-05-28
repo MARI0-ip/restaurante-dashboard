@@ -871,10 +871,19 @@ setInterval(actualizarTiempos, 30000);
 // ═══════════════════════════════════════════════
 const dot = document.getElementById('dot');
 
+let sseActual = null;
+
 function conectar() {
+  if (sseActual) { sseActual.close(); sseActual = null; }
   const sse = new EventSource('/api/eventos', { withCredentials: true });
+  sseActual = sse;
   sse.onopen  = () => dot.classList.remove('offline');
-  sse.onerror = () => { dot.classList.add('offline'); sse.close(); setTimeout(conectar, 3000); };
+  sse.onerror = () => {
+    dot.classList.add('offline');
+    sseActual = null;
+    sse.close();
+    setTimeout(conectar, 3000);
+  };
 
   sse.onmessage = ({ data }) => {
     const { tipo, datos } = JSON.parse(data);
