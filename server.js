@@ -440,7 +440,16 @@ app.put('/api/pedido/:id/estado', async (req, res) => {
       const r = await fetch(N8N_WEBHOOK_ESTADO, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pedido_id: id, cliente: pedido.cliente, telefono: pedido.telefono, estado, actualizado: pedido.actualizado }),
+        body: JSON.stringify({
+          pedido_id:  id,
+          cliente:    pedido.cliente,
+          telefono:   pedido.telefono,
+          direccion:  pedido.direccion,
+          items:      pedido.items,
+          total:      pedido.total,
+          estado,
+          actualizado: pedido.actualizado,
+        }),
       });
       console.log(`  ↳ n8n notificado: HTTP ${r.status}`);
     } catch (err) {
