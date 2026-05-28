@@ -874,7 +874,7 @@ const dot = document.getElementById('dot');
 function conectar() {
   const sse = new EventSource('/api/eventos', { withCredentials: true });
   sse.onopen  = () => dot.classList.remove('offline');
-  sse.onerror = () => { dot.classList.add('offline'); setTimeout(conectar, 3000); };
+  sse.onerror = () => { dot.classList.add('offline'); sse.close(); setTimeout(conectar, 3000); };
 
   sse.onmessage = ({ data }) => {
     const { tipo, datos } = JSON.parse(data);
