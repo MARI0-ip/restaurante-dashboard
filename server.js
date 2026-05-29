@@ -391,7 +391,7 @@ app.post('/api/pedido', (req, res) => {
     telefono:    d.telefono || d.phone || '',
     direccion:   d.direccion || d.address || '',
     items:       d.items || d.productos || [],
-    total:       d.total || d.monto || calcularTotal(d.items || d.productos || []),
+    total:       d.total != null ? Number(d.total) : (d.monto != null ? Number(d.monto) : calcularTotal(d.items || d.productos || [])),
     notas:            d.notas || d.observaciones || '',
     telegram_chat_id: d.telegram_chat_id ? String(d.telegram_chat_id) : '',
     estado:      'nuevo',
@@ -483,7 +483,8 @@ app.delete('/api/pedido/:id', (req, res) => {
 // Helpers
 // ──────────────────────────────────────────────
 function calcularTotal(items) {
-  return (items || []).reduce((s, i) => s + (i.precio || 0) * (i.cantidad || 1), 0);
+  if (!Array.isArray(items)) return 0;
+  return items.reduce((s, i) => s + (i.precio || 0) * (i.cantidad || 1), 0);
 }
 
 function resumenRegistros() {
