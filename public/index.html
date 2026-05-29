@@ -1133,10 +1133,13 @@ function mkTarjeta(p) {
   const tTxt = min < 1 ? 'ahora' : min === 1 ? '1 min' : `${min} min`;
   const tCls = min > 20 ? 'urgente' : '';
 
-  const itemsH = (p.items || []).map(i =>
+  const itemsArr = Array.isArray(p.items)
+    ? p.items
+    : (p.items ? [{ nombre: String(p.items), cantidad: '', precio: null }] : []);
+  const itemsH = itemsArr.map(i =>
     `<li>
-      <span><span class="iq">${i.cantidad||1}×</span>${esc(i.nombre||i.name||'Ítem')}</span>
-      <span class="ip">${fmt(i.precio)}</span>
+      <span><span class="iq">${i.cantidad ? i.cantidad+'×' : ''}</span>${esc(i.nombre||i.name||String(i))}</span>
+      ${i.precio != null ? `<span class="ip">${fmt(i.precio)}</span>` : ''}
     </li>`
   ).join('');
 
