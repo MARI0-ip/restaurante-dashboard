@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "instanceId": ""
+  },
+  "nodes": [
+    {
+      "id": "http-pedido-dashboard-001",
+      "name": "Enviar Pedido al Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DASHBOARD_URL }}/api/pedido",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WEBHOOK_SECRET }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "cliente",
+              "value": "={{ $json.cliente }}"
+            },
+            {
+              "name": "telefono",
+              "value": "={{ $json.telefono }}"
+            },
+            {
+              "name": "direccion",
+              "value": "={{ $json.direccion }}"
+            },
+            {
+              "name": "items",
+              "value": "={{ $json.items }}"
+            },
+            {
+              "name": "total",
+              "value": "={{ $json.total }}"
+            },
+            {
+              "name": "notas",
+              "value": "={{ $json.notas ?? '' }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": false
+            }
+          }
+        }
+      },
+      "notes": "Envía un pedido al dashboard de El Vikingo.\n\nRequiere variables de entorno en n8n:\n  DASHBOARD_URL = URL base del dashboard\n  WEBHOOK_SECRET = token secreto (debe coincidir con el .env del dashboard)\n\nEl nodo anterior debe tener los campos:\n  cliente, telefono, direccion, items (array), total, notas"
+    }
+  ],
+  "connections": {},
+  "pinData": {}
+}

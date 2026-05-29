@@ -1,0 +1,149 @@
+{
+  "name": "🍽️ Restaurante — Pedidos por Telegram",
+  "nodes": [
+    {
+      "id": "aaa00001-0000-0000-0000-000000000001",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "webhookId": "restaurante-telegram-pedidos",
+      "parameters": {
+        "updates": ["message"]
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram Bot Restaurante"
+        }
+      }
+    },
+    {
+      "id": "aaa00001-0000-0000-0000-000000000002",
+      "name": "Parsear Pedido",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ─── Datos del mensaje de Telegram ───────────────────────────\nconst msg       = $json.message?.text || '';\nconst chatId    = $json.message?.chat?.id;\nconst firstName = $json.message?.from?.first_name || '';\nconst lastName  = $json.message?.from?.last_name  || '';\nconst tgName    = [firstName, lastName].filter(Boolean).join(' ') || 'Cliente Telegram';\n\n// ─── ¿Es un mensaje de pedido? ────────────────────────────────\nconst esPedido = /\\bpedido\\b|\\bpido\\b|\\bquiero\\b|\\bquisiera\\b|\\border\\b|\\bsolicito\\b|\\bme trae\\b/i.test(msg);\n\nif (!esPedido) {\n  return { valid: false, chatId, msg };\n}\n\n// ─── Extractor de campos con regex ────────────────────────────\nfunction extract(text, ...patterns) {\n  for (const re of patterns) {\n    const m = text.match(re);\n    if (m) return m[1].trim();\n  }\n  return '';\n}\n\nconst cliente = extract(msg,\n  /(?:nombre|llamo|soy|me llamo)[:\\s]+([^\\n,;]+)/i\n) || tgName;\n\nconst telefono = extract(msg,\n  /(?:tel[eé]f?(?:ono)?|cel(?:ular)?|whatsapp|n[uú]mero|phone|m[oó]vil)[:\\s]+([+\\d\\s\\-().]{7,})/i\n);\n\nconst direccion = extract(msg,\n  /(?:direcci[oó]n|domicilio|calle|av(?:enida)?\\.?|entregar? en|enviar? a|domicilio)[:\\s]+([^\\n]+)/i\n);\n\nconst notas = extract(msg,\n  /(?:notas?|observaciones?|instrucciones?|comentarios?|sin \\w|con extra)[:\\s]+([^\\n]+)/i\n);\n\n// ─── Parsear items: \"2 hamburguesas\", \"1x pizza\" ──────────────\nconst items = [];\nconst itemRe = /(\\d+)\\s*[xX×]?\\s*([a-záéíóúüñA-ZÁÉÍÓÚÜÑ][\\w\\s]+?)(?=\\s*(?:,|\\n|\\by\\b|\\+|$))/g;\nlet m;\nwhile ((m = itemRe.exec(msg)) !== null) {\n  const nombre = m[2].trim().replace(/\\s+/g, ' ');\n  if (nombre.length > 1) items.push({ nombre, cantidad: parseInt(m[1]), precio: 0 });\n}\n\n// Fallback si no se encontraron items estructurados\nif (items.length === 0) {\n  const primera = msg\n    .replace(/quiero|pido|quisiera|pedido|orden/gi, '')\n    .trim()\n    .split('\\n')[0]\n    .substring(0, 120);\n  items.push({ nombre: primera || 'Pedido especial', cantidad: 1, precio: 0 });\n}\n\n// ─── Body JSON listo para POST /api/pedido ────────────────────\nconst body = JSON.stringify({ cliente, telefono, direccion, notas, items });\n\nreturn { valid: true, chatId, cliente, telefono, direccion, notas, items, body };"
+      }
+    },
+    {
+      "id": "aaa00001-0000-0000-0000-000000000003",
+      "name": "¿Es pedido válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [680, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "aaa00001-0000-0000-0000-000000000004",
+      "name": "Enviar al Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 180],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DASHBOARD_URL }}/api/pedido",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WEBHOOK_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {
+          "response": { "response": { "neverError": false } }
+        }
+      }
+    },
+    {
+      "id": "aaa00001-0000-0000-0000-000000000005",
+      "name": "Confirmar Pedido",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1120, 180],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('Parsear Pedido').item.json.chatId }}",
+        "text": "=✅ *¡Pedido recibido!*\n\n🔖 ID: `{{ $json.pedido_id }}`\n👤 Cliente: {{ $('Parsear Pedido').item.json.cliente }}\n\n📦 *Items:*\n{{ $('Parsear Pedido').item.json.items.map(i => `• ${i.cantidad}x ${i.nombre}`).join('\\n') }}\n\n⏳ _Te notificaremos por WhatsApp cuando cambie el estado._",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram Bot Restaurante"
+        }
+      }
+    },
+    {
+      "id": "aaa00001-0000-0000-0000-000000000006",
+      "name": "Instrucciones",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, 440],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "👋 ¡Hola\\! Soy el bot de pedidos 🍽️\n\nPara hacer un pedido escríbeme así:\n\n```\n2 hamburguesas y 1 refresco\nNombre: Juan López\nDirección: Calle 5 \\#123\nTel: \\+5491112345678\n```\n\n¡Te confirmamos en segundos\\! 🚀",
+        "additionalFields": { "parse_mode": "MarkdownV2" }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram Bot Restaurante"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [{ "node": "Parsear Pedido", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parsear Pedido": {
+      "main": [
+        [{ "node": "¿Es pedido válido?", "type": "main", "index": 0 }]
+      ]
+    },
+    "¿Es pedido válido?": {
+      "main": [
+        [{ "node": "Enviar al Dashboard", "type": "main", "index": 0 }],
+        [{ "node": "Instrucciones", "type": "main", "index": 0 }]
+      ]
+    },
+    "Enviar al Dashboard": {
+      "main": [
+        [{ "node": "Confirmar Pedido", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

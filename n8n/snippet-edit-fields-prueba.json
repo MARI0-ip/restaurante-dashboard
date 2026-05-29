@@ -1,0 +1,59 @@
+{
+  "meta": { "instanceId": "" },
+  "nodes": [
+    {
+      "id": "edit-fields-prueba-001",
+      "name": "Datos de Prueba",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [260, 300],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-cliente",
+              "name": "cliente",
+              "value": "María López",
+              "type": "string"
+            },
+            {
+              "id": "field-telefono",
+              "name": "telefono",
+              "value": "555-1234",
+              "type": "string"
+            },
+            {
+              "id": "field-direccion",
+              "name": "direccion",
+              "value": "Calle Principal 45, Col. Centro",
+              "type": "string"
+            },
+            {
+              "id": "field-items",
+              "name": "items",
+              "value": "=[{ \"nombre\": \"Pizza Margarita\", \"cantidad\": 2, \"precio\": 180 }, { \"nombre\": \"Refresco\", \"cantidad\": 1, \"precio\": 30 }]",
+              "type": "array"
+            },
+            {
+              "id": "field-total",
+              "name": "total",
+              "value": 390,
+              "type": "number"
+            },
+            {
+              "id": "field-notas",
+              "name": "notas",
+              "value": "Sin cebolla",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {},
+  "pinData": {}
+}

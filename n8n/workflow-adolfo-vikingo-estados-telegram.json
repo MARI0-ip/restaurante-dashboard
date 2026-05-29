@@ -1,0 +1,200 @@
+{
+  "name": "⚔️ Adolfo Vikingo — Notificaciones de Estado",
+  "nodes": [
+    {
+      "id": "est-001",
+      "name": "Recibir Cambio de Estado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "adolfo-vikingo-estado",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "adolfo-vikingo-estado",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "responseCode": 200,
+        "options": {}
+      }
+    },
+    {
+      "id": "est-002",
+      "name": "¿Tiene Telegram Chat ID?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [460, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-001",
+              "leftValue": "={{ $json.body.telegram_chat_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "est-003",
+      "name": "Switch por Estado",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 200],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "id": "rule-001",
+                    "leftValue": "={{ $json.body.estado }}",
+                    "rightValue": "preparacion",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "preparacion"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "id": "rule-002",
+                    "leftValue": "={{ $json.body.estado }}",
+                    "rightValue": "camino",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "camino"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "id": "rule-003",
+                    "leftValue": "={{ $json.body.estado }}",
+                    "rightValue": "entregado",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "entregado"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      }
+    },
+    {
+      "id": "est-004",
+      "name": "Telegram: En Preparación",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [920, 80],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('Recibir Cambio de Estado').item.json.body.telegram_chat_id }}",
+        "text": "=👨‍🍳 ¡Hola {{ $('Recibir Cambio de Estado').item.json.body.cliente }}!\n\nTu pedido *{{ $('Recibir Cambio de Estado').item.json.body.pedido_id }}* en Adolfo Vikingo ya está en la cocina siendo preparado con todo el sabor vikingo. ¡Pronto estará listo! 🔥",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram Bot Adolfo Vikingo"
+        }
+      }
+    },
+    {
+      "id": "est-005",
+      "name": "Telegram: En Camino",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [920, 240],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('Recibir Cambio de Estado').item.json.body.telegram_chat_id }}",
+        "text": "=🛵 ¡Ya viene camino a ti!\n\nTu pedido *{{ $('Recibir Cambio de Estado').item.json.body.pedido_id }}* de Adolfo Vikingo está con nuestro repartidor. Llega pronto a {{ $('Recibir Cambio de Estado').item.json.body.direccion }}. ¡Prepárate para el festín! 🍽️⚔️",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram Bot Adolfo Vikingo"
+        }
+      }
+    },
+    {
+      "id": "est-006",
+      "name": "Telegram: Entregado",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [920, 400],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('Recibir Cambio de Estado').item.json.body.telegram_chat_id }}",
+        "text": "=✅ ¡Pedido entregado!\n\nGracias *{{ $('Recibir Cambio de Estado').item.json.body.cliente }}* por elegir Adolfo Vikingo ⚔️.\n¡Que lo disfrutes con todo el espíritu vikingo! 🍽️\n\n¡Hasta la próxima conquista! ⚔️",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram Bot Adolfo Vikingo"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Recibir Cambio de Estado": {
+      "main": [[{ "node": "¿Tiene Telegram Chat ID?", "type": "main", "index": 0 }]]
+    },
+    "¿Tiene Telegram Chat ID?": {
+      "main": [
+        [{ "node": "Switch por Estado", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Switch por Estado": {
+      "main": [
+        [{ "node": "Telegram: En Preparación", "type": "main", "index": 0 }],
+        [{ "node": "Telegram: En Camino",      "type": "main", "index": 0 }],
+        [{ "node": "Telegram: Entregado",      "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

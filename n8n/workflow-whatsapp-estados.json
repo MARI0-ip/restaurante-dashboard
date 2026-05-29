@@ -1,0 +1,189 @@
+{
+  "name": "🍽️ Restaurante — Notificaciones WhatsApp por Estado",
+  "nodes": [
+    {
+      "id": "bbb00002-0000-0000-0000-000000000001",
+      "name": "Recibir Cambio de Estado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "restaurante-estado-pedido",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "estado-pedido",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "responseCode": 200,
+        "options": {}
+      }
+    },
+    {
+      "id": "bbb00002-0000-0000-0000-000000000002",
+      "name": "¿Tiene teléfono?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [460, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "cond-phone",
+              "leftValue": "={{ $json.body.telefono }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "bbb00002-0000-0000-0000-000000000003",
+      "name": "Estado del Pedido",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 200],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.estado }}",
+                    "rightValue": "preparacion",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "preparacion"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.estado }}",
+                    "rightValue": "camino",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "camino"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.estado }}",
+                    "rightValue": "entregado",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "entregado"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "none" }
+      }
+    },
+    {
+      "id": "bbb00002-0000-0000-0000-000000000004",
+      "name": "WA — En Preparación",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 100],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.body.telefono.replace(/\\D/g, '') }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"👨‍🍳 Hola {{ $json.body.cliente }}! Tu pedido *{{ $json.body.pedido_id }}* ya está siendo preparado en la cocina. Te avisamos cuando salga 🔥\"\n  }\n}"
+      }
+    },
+    {
+      "id": "bbb00002-0000-0000-0000-000000000005",
+      "name": "WA — En Camino",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 260],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.body.telefono.replace(/\\D/g, '') }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"🚗 ¡Ya viene! Tu pedido *{{ $json.body.pedido_id }}* está en camino, {{ $json.body.cliente }}. Prepárate para recibirlo 🎉\"\n  }\n}"
+      }
+    },
+    {
+      "id": "bbb00002-0000-0000-0000-000000000006",
+      "name": "WA — Entregado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 420],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.body.telefono.replace(/\\D/g, '') }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"✅ ¡Entregado! Gracias {{ $json.body.cliente }} por tu pedido *{{ $json.body.pedido_id }}*. ¡Esperamos que lo disfrutes! 🍽️\\n\\n⭐ ¿Todo bien? No dudes en volver a pedir.\"\n  }\n}"
+      }
+    }
+  ],
+  "connections": {
+    "Recibir Cambio de Estado": {
+      "main": [
+        [{ "node": "¿Tiene teléfono?", "type": "main", "index": 0 }]
+      ]
+    },
+    "¿Tiene teléfono?": {
+      "main": [
+        [{ "node": "Estado del Pedido", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Estado del Pedido": {
+      "main": [
+        [{ "node": "WA — En Preparación", "type": "main", "index": 0 }],
+        [{ "node": "WA — En Camino",      "type": "main", "index": 0 }],
+        [{ "node": "WA — Entregado",      "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

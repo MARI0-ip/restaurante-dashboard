@@ -718,6 +718,123 @@
     }
 
     /* ────────────────────────────────────────────
+       PANEL MENÚ
+    ──────────────────────────────────────────── */
+    .overlay-menu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.65);
+      z-index: 200;
+      backdrop-filter: blur(4px);
+    }
+    .overlay-menu.visible { display: flex; align-items: flex-start; justify-content: flex-end; }
+
+    .panel-menu {
+      background: var(--surface);
+      width: min(720px, 100vw);
+      height: 100vh;
+      overflow: hidden;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      animation: slidePanel .28s cubic-bezier(.34,1.2,.64,1);
+    }
+
+    .h-btn-menu {
+      background: var(--blue-dim);
+      color: var(--blue);
+      border-color: rgba(96,165,250,.25);
+    }
+    .h-btn-menu:hover { background: rgba(96,165,250,.22); }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .tog-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--surface3);
+      border: 1px solid var(--border2);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
+    }
+    .tog-slider::before {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      left: 2px; top: 2px;
+      background: var(--muted);
+      border-radius: 50%;
+      transition: transform .2s, background .2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.4);
+    }
+    .toggle input:checked + .tog-slider {
+      background: var(--green-dim);
+      border-color: rgba(52,211,153,.4);
+    }
+    .toggle input:checked + .tog-slider::before {
+      transform: translateX(20px);
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green-glow);
+    }
+    .toggle input:disabled + .tog-slider { opacity: .5; cursor: not-allowed; }
+
+    /* Tabla menú */
+    .menu-table-wrap { flex: 1; overflow-y: auto; }
+    .menu-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .82rem;
+    }
+    .menu-table th {
+      text-align: left;
+      padding: 10px 16px;
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .menu-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .menu-table tbody tr:last-child td { border-bottom: none; }
+    .menu-table tbody tr { transition: background .12s; }
+    .menu-table tbody tr:hover td { background: rgba(255,255,255,.02); }
+
+    .mt-nombre { font-weight: 600; color: var(--text); }
+    .mt-ing    { color: var(--text2); font-size: .76rem; line-height: 1.4; max-width: 260px; }
+    .mt-precio { color: var(--green); font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+    .menu-status {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      font-size: .85rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .menu-status.error { color: var(--red); }
+    .menu-status .ms-icon { font-size: 2rem; opacity: .6; }
+
+    /* ────────────────────────────────────────────
        SCROLLBAR
     ──────────────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -745,6 +862,7 @@
     <div class="dot" id="dot" title="Conexión en tiempo real"></div>
     <span id="reloj">--:--:--</span>
     <button class="h-btn" onclick="pedidoPrueba()">+ Prueba</button>
+    <button class="h-btn h-btn-menu" onclick="abrirMenu()">🍽️ Menú</button>
     <button class="h-btn h-btn-reg" onclick="abrirRegistros()">
       📊 Registros <span class="breg-count" id="badge-reg">0</span>
     </button>
@@ -831,6 +949,28 @@
     <div class="panel-footer">
       <button class="btn-limpiar" onclick="limpiarRegistros()">🗑️ Limpiar todos los registros del día</button>
     </div>
+  </div>
+</div>
+
+<!-- ── PANEL MENÚ ───────────────────────────────────── -->
+<div class="overlay-menu" id="overlay-menu" onclick="cerrarSiOverlayMenu(event)">
+  <div class="panel-menu">
+
+    <div class="panel-header">
+      <div>
+        <h2>🍽️ Disponibilidad del menú</h2>
+        <p>Cambios guardados en Supabase en tiempo real</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="h-btn" onclick="cargarMenu()" title="Recargar">↺ Recargar</button>
+        <button class="btn-cerrar" onclick="cerrarMenu()">✕ Cerrar</button>
+      </div>
+    </div>
+
+    <div class="menu-table-wrap" id="menu-contenido">
+      <div class="menu-status"><div class="ms-icon">⏳</div>Cargando productos...</div>
+    </div>
+
   </div>
 </div>
 
@@ -1267,6 +1407,87 @@ function sonido() {
       o.stop(ctx.currentTime + i*.12 + .2);
     });
   } catch(_){}
+}
+
+// ═══════════════════════════════════════════════
+// Panel Menú — Supabase
+// ═══════════════════════════════════════════════
+function abrirMenu() {
+  document.getElementById('overlay-menu').classList.add('visible');
+  cargarMenu();
+}
+
+function cerrarMenu() {
+  document.getElementById('overlay-menu').classList.remove('visible');
+}
+
+function cerrarSiOverlayMenu(e) {
+  if (e.target === document.getElementById('overlay-menu')) cerrarMenu();
+}
+
+async function cargarMenu() {
+  const cont = document.getElementById('menu-contenido');
+  cont.innerHTML = '<div class="menu-status"><div class="ms-icon">⏳</div>Cargando productos...</div>';
+  try {
+    const r = await apiFetch('/api/menu');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const items = await r.json();
+    renderMenu(items);
+  } catch (e) {
+    cont.innerHTML = `<div class="menu-status error"><div class="ms-icon">❌</div>Error: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderMenu(items) {
+  const cont = document.getElementById('menu-contenido');
+  if (!items.length) {
+    cont.innerHTML = '<div class="menu-status"><div class="ms-icon">📭</div>Sin productos en la base de datos</div>';
+    return;
+  }
+  const filas = items.map(item => `
+    <tr>
+      <td class="mt-nombre">${esc(item.producto || '')}</td>
+      <td class="mt-ing">${esc(item.ingredientes || '—')}</td>
+      <td class="mt-precio">${fmt(item.Precio ?? item.precio)}</td>
+      <td>
+        <label class="toggle" title="${item.disponible ? 'Disponible — clic para desactivar' : 'No disponible — clic para activar'}">
+          <input type="checkbox" ${item.disponible ? 'checked' : ''}
+                 onchange="toggleDisponible(${item.id}, this.checked, this)">
+          <span class="tog-slider"></span>
+        </label>
+      </td>
+    </tr>`).join('');
+
+  cont.innerHTML = `
+    <table class="menu-table">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Ingredientes</th>
+          <th>Precio</th>
+          <th>Disponible</th>
+        </tr>
+      </thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+async function toggleDisponible(id, nuevoValor, checkbox) {
+  checkbox.disabled = true;
+  try {
+    const r = await apiFetch(`/api/menu/${id}/disponible`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ disponible: nuevoValor }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    toast(nuevoValor ? '✅ Producto activado' : '🚫 Producto desactivado', nuevoValor ? 'ok' : 'error');
+  } catch (e) {
+    checkbox.checked = !nuevoValor;
+    toast('Error al actualizar disponibilidad', 'error');
+  } finally {
+    checkbox.disabled = false;
+  }
 }
 
 // ═══════════════════════════════════════════════

@@ -6,6 +6,7 @@ const crypto       = require('crypto');
 const jwt          = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const fs           = require('fs');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT               = process.env.PORT               || 3001;
@@ -13,6 +14,9 @@ const NOMBRE_RESTAURANTE = process.env.NOMBRE_RESTAURANTE || 'Mi Restaurante';
 const N8N_WEBHOOK_ESTADO = process.env.N8N_WEBHOOK_ESTADO || '';
 const WEBHOOK_SECRET     = process.env.WEBHOOK_SECRET     || '';
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
+const supabase     = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // JWT_SECRET DEBE estar en .env — si no, se regenera en cada reinicio e invalida todas las sesiones
 if (!process.env.JWT_SECRET) console.warn('⚠️  JWT_SECRET no configurado: las sesiones se perderán al reiniciar el servidor');
@@ -495,6 +499,36 @@ function resumenRegistros() {
 
   return { registros, total_ventas, cantidad, ticket_prom, tiempo_prom_min };
 }
+
+// ──────────────────────────────────────────────
+// GET /api/menu — leer productos desde Supabase
+// ──────────────────────────────────────────────
+app.get('/api/menu', async (req, res) => {
+  if (!supabase) return res.status(503).json({ error: 'Supabase no configurado' });
+  const { data, error } = await supabase.from('n8nmenu').select('*').order('producto');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// ──────────────────────────────────────────────
+// PUT /api/menu/:id/disponible — actualizar disponibilidad
+// ──────────────────────────────────────────────
+app.put('/api/menu/:id/disponible', async (req, res) => {
+  if (!supabase) return res.status(503).json({ error: 'Supabase no configurado' });
+  const { id } = req.params;
+  const { disponible } = req.body;
+  if (typeof disponible !== 'boolean') {
+    return res.status(400).json({ error: 'disponible debe ser boolean' });
+  }
+  const { data, error } = await supabase
+    .from('n8nmenu')
+    .update({ disponible })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true, item: data });
+});
 
 // ──────────────────────────────────────────────
 // Start
