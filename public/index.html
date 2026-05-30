@@ -1271,7 +1271,9 @@ function renderRegistros() {
   lista.innerHTML = [...regs].reverse().map(p => {
     const hora = new Date(p.entregado_en || p.actualizado)
       .toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
-    const resItems = (p.items||[]).map(i => `${i.cantidad||1}× ${i.nombre||i.name||'Ítem'}`).join(' · ');
+    const resItems = Array.isArray(p.items)
+      ? p.items.map(i => `${i.cantidad||1}× ${i.nombre||i.name||'Ítem'}`).join(' · ')
+      : (p.items ? String(p.items) : '');
 
     const hist     = (p.historial||[]).filter(h => h.estado !== 'entregado');
     const finTotal = new Date(p.entregado_en||p.actualizado).getTime();
