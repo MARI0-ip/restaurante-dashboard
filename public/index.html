@@ -1180,8 +1180,12 @@ function conectar() {
       pedidos.set(datos.id, datos);
       agregarTarjeta(datos);
       actualizarContadores();
-      toast(`🆕 Nuevo pedido: ${datos.cliente}`, 'nuevo');
-      sonido();
+      // Los pedidos manuales los entra el personal a propósito → sin sonido ni toast
+      // (quien lo creó ya vio la confirmación). Los del bot sí alertan.
+      if (datos.origen !== 'manual') {
+        toast(`🆕 Nuevo pedido: ${datos.cliente}`, 'nuevo');
+        sonido();
+      }
     }
     if (tipo === 'estado_actualizado') {
       if (yaVisto(`est:${datos.id}:${datos.estado}`)) return;
