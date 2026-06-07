@@ -38,6 +38,7 @@
 
       --purple:      #a78bfa;
       --purple-dim:  rgba(167,139,250,.15);
+      --purple-glow: rgba(167,139,250,.3);
 
       --red:         #f87171;
       --red-dim:     rgba(248,113,113,.15);
@@ -122,6 +123,7 @@
     .hc-yellow { background: var(--yellow-dim); color: var(--yellow); border-color: rgba(245,158,11,.2); }
     .hc-orange { background: var(--orange-dim); color: var(--orange); border-color: rgba(249,115,22,.2); }
     .hc-blue   { background: var(--blue-dim);   color: var(--blue);   border-color: rgba(96,165,250,.2); }
+    .hc-purple { background: var(--purple-dim); color: var(--purple); border-color: rgba(167,139,250,.2); }
 
     /* punto conexión */
     .dot {
@@ -188,15 +190,15 @@
     ──────────────────────────────────────────── */
     .board {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 20px;
       padding: 24px;
       min-height: calc(100vh - 64px);
       align-content: start;
     }
 
-    @media (max-width: 960px) { .board { grid-template-columns: repeat(2,1fr); } }
-    @media (max-width: 600px) { .board { grid-template-columns: 1fr; } }
+    @media (max-width: 1200px) { .board { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 600px)  { .board { grid-template-columns: 1fr; } }
 
     /* ────────────────────────────────────────────
        COLUMNA
@@ -225,6 +227,11 @@
       background: linear-gradient(135deg, rgba(249,115,22,.12), rgba(249,115,22,.06));
       color: var(--orange);
       border-color: rgba(249,115,22,.2);
+    }
+    .col-listo .col-header {
+      background: linear-gradient(135deg, rgba(167,139,250,.12), rgba(167,139,250,.06));
+      color: var(--purple);
+      border-color: rgba(167,139,250,.2);
     }
     .col-cam .col-header {
       background: linear-gradient(135deg, rgba(96,165,250,.12), rgba(96,165,250,.06));
@@ -287,6 +294,7 @@
 
     .tarjeta[data-estado="nuevo"]::before       { background: var(--yellow); box-shadow: 2px 0 12px var(--yellow-glow); }
     .tarjeta[data-estado="preparacion"]::before { background: var(--orange); box-shadow: 2px 0 12px var(--orange-glow); }
+    .tarjeta[data-estado="listo"]::before       { background: var(--purple); box-shadow: 2px 0 12px var(--purple-glow); }
     .tarjeta[data-estado="camino"]::before      { background: var(--blue);   box-shadow: 2px 0 12px var(--blue-glow); }
 
     .tarjeta:hover {
@@ -472,6 +480,7 @@
 
     .be-nuevo { background: var(--yellow-dim); color: var(--yellow); border-color: rgba(245,158,11,.3); }
     .be-prep  { background: var(--orange-dim); color: var(--orange); border-color: rgba(249,115,22,.3); }
+    .be-listo { background: var(--purple-dim); color: var(--purple); border-color: rgba(167,139,250,.3); }
     .be-cam   { background: var(--blue-dim);   color: var(--blue);   border-color: rgba(96,165,250,.3); }
     .be-ent   { background: var(--green-dim);  color: var(--green);  border-color: rgba(52,211,153,.3); }
 
@@ -834,6 +843,41 @@
     .menu-status.error { color: var(--red); }
     .menu-status .ms-icon { font-size: 2rem; opacity: .6; }
 
+    /* ── Nuevo pedido manual ── */
+    .np-body { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+    .np-field { display: flex; flex-direction: column; gap: 5px; }
+    .np-field > label { font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .np-body input, .np-body select, .np-body textarea {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 9px 11px; color: var(--text); font-family: inherit; font-size: .85rem; width: 100%;
+    }
+    .np-body input:focus, .np-body select:focus { outline: none; border-color: var(--purple); }
+    .np-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .np-add-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .np-add-row select { flex: 1; min-width: 160px; }
+    .np-mini-btn {
+      background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(167,139,250,.3);
+      border-radius: 8px; padding: 8px 12px; font-size: .78rem; font-weight: 600; cursor: pointer;
+      white-space: nowrap; font-family: inherit;
+    }
+    .np-mini-btn.libre { background: var(--surface3); color: var(--text2); border-color: var(--border2); }
+    .np-mini-btn:hover { filter: brightness(1.15); }
+    .np-items { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .np-item { display: grid; grid-template-columns: 1fr 54px 96px 30px; gap: 8px; align-items: center; }
+    .np-item input { padding: 7px 9px; }
+    .np-item input[readonly] { color: var(--text2); }
+    .np-item .np-del { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1rem; padding: 0; }
+    .np-empty { color: var(--muted); font-size: .8rem; text-align: center; padding: 14px; border: 1px dashed var(--border); border-radius: 8px; }
+    .np-total-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .np-total-lbl { font-size: .8rem; color: var(--text2); }
+    .np-total-row input { width: 150px; text-align: right; font-weight: 700; color: var(--green); font-size: 1rem; }
+    .btn-guardar-pedido {
+      background: var(--green-dim); color: var(--green); border: 1px solid rgba(52,211,153,.35);
+      border-radius: 9px; padding: 12px; font-weight: 700; font-size: .9rem; cursor: pointer;
+      width: 100%; font-family: inherit;
+    }
+    .btn-guardar-pedido:hover { background: rgba(52,211,153,.22); }
+
     /* ────────────────────────────────────────────
        SCROLLBAR
     ──────────────────────────────────────────── */
@@ -858,10 +902,11 @@
   <div class="h-right">
     <div class="hchip hc-yellow" id="cnt-nuevo">🆕 <span class="n">0</span> nuevos</div>
     <div class="hchip hc-orange" id="cnt-prep">🔥 <span class="n">0</span> prep.</div>
+    <div class="hchip hc-purple" id="cnt-listo">🍽️ <span class="n">0</span> listos</div>
     <div class="hchip hc-blue"   id="cnt-cam">🛵 <span class="n">0</span> camino</div>
     <div class="dot" id="dot" title="Conexión en tiempo real"></div>
     <span id="reloj">--:--:--</span>
-    <button class="h-btn" onclick="pedidoPrueba()">+ Prueba</button>
+    <button class="h-btn" onclick="abrirNuevoPedido()">+ Pedido</button>
     <button class="h-btn h-btn-menu" onclick="abrirMenu()">🍽️ Menú</button>
     <button class="h-btn h-btn-reg" onclick="abrirRegistros()">
       📊 Registros <span class="breg-count" id="badge-reg">0</span>
@@ -894,6 +939,18 @@
     </div>
     <div class="col-cards" id="col-preparacion">
       <div class="vacia"><div class="iv">🍳</div>Sin pedidos en preparación</div>
+    </div>
+  </div>
+
+  <!-- Listo -->
+  <div class="columna col-listo">
+    <div class="col-header">
+      <span class="col-icon">🍽️</span>
+      Listo
+      <span class="col-badge" id="badge-listo">0</span>
+    </div>
+    <div class="col-cards" id="col-listo">
+      <div class="vacia"><div class="iv">🍽️</div>Sin pedidos listos</div>
     </div>
   </div>
 
@@ -969,6 +1026,73 @@
 
     <div class="menu-table-wrap" id="menu-contenido">
       <div class="menu-status"><div class="ms-icon">⏳</div>Cargando productos...</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL NUEVO PEDIDO ───────────────────────────── -->
+<div class="overlay-menu" id="overlay-nuevo" onclick="cerrarSiOverlayNuevo(event)">
+  <div class="panel-menu">
+
+    <div class="panel-header">
+      <div>
+        <h2>➕ Nuevo pedido manual</h2>
+        <p>Para pedidos por teléfono o en local</p>
+      </div>
+      <button class="btn-cerrar" onclick="cerrarNuevoPedido()">✕ Cerrar</button>
+    </div>
+
+    <div class="np-body">
+      <div class="np-field">
+        <label>Cliente *</label>
+        <input id="np-cliente" type="text" placeholder="Nombre del cliente" autocomplete="off">
+      </div>
+
+      <div class="np-grid2">
+        <div class="np-field">
+          <label>Teléfono</label>
+          <input id="np-telefono" type="text" placeholder="Opcional" autocomplete="off">
+        </div>
+        <div class="np-field">
+          <label>Tipo de entrega</label>
+          <select id="np-tipo" onchange="recalcTotalNuevo()">
+            <option value="domicilio">🛵 Domicilio (+$3.000)</option>
+            <option value="recoger">🏠 Recoger en local</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="np-field">
+        <label>Dirección</label>
+        <input id="np-direccion" type="text" placeholder="Dirección de entrega (si es domicilio)" autocomplete="off">
+      </div>
+
+      <div class="np-field">
+        <label>Productos</label>
+        <div class="np-add-row">
+          <select id="np-menu-select"><option value="">Cargando menú…</option></select>
+          <button class="np-mini-btn" onclick="agregarItemMenu()">+ Agregar</button>
+          <button class="np-mini-btn libre" onclick="agregarLineaLibre()">+ Línea libre</button>
+        </div>
+        <div class="np-items" id="np-items">
+          <div class="np-empty">Aún no hay productos en el pedido</div>
+        </div>
+      </div>
+
+      <div class="np-field">
+        <label>Notas</label>
+        <input id="np-notas" type="text" placeholder="Sin picante, tocar timbre, etc." autocomplete="off">
+      </div>
+
+      <div class="np-total-row">
+        <span class="np-total-lbl">Total <span id="np-total-auto" style="color:var(--muted)"></span></span>
+        <input id="np-total" type="number" min="0" value="0" oninput="npTotalManual = true">
+      </div>
+    </div>
+
+    <div class="panel-footer">
+      <button class="btn-guardar-pedido" onclick="guardarPedidoManual()">✅ Crear pedido</button>
     </div>
 
   </div>
@@ -1100,7 +1224,7 @@ conectar();
 // Render Board
 // ═══════════════════════════════════════════════
 function renderBoard() {
-  ['col-nuevo','col-preparacion','col-camino'].forEach(id => {
+  ['col-nuevo','col-preparacion','col-listo','col-camino'].forEach(id => {
     document.getElementById(id).innerHTML = '';
   });
   pedidos.forEach(p => agregarTarjeta(p));
@@ -1109,7 +1233,7 @@ function renderBoard() {
 }
 
 function agregarTarjeta(p) {
-  const colMap = { nuevo:'col-nuevo', preparacion:'col-preparacion', camino:'col-camino' };
+  const colMap = { nuevo:'col-nuevo', preparacion:'col-preparacion', listo:'col-listo', camino:'col-camino' };
   const col = document.getElementById(colMap[p.estado] || 'col-nuevo');
   if (!col) return;
   col.querySelectorAll('.vacia').forEach(v => v.remove());
@@ -1161,6 +1285,7 @@ function mkTarjeta(p) {
       <div class="btns">
         <button class="btn-est be-nuevo ${p.estado==='nuevo'?'activo':''}"        onclick="cambiarEstado('${p.id}','nuevo')">🆕 Nuevo</button>
         <button class="btn-est be-prep  ${p.estado==='preparacion'?'activo':''}"  onclick="cambiarEstado('${p.id}','preparacion')">🔥 Prep.</button>
+        <button class="btn-est be-listo ${p.estado==='listo'?'activo':''}"        onclick="cambiarEstado('${p.id}','listo')">🍽️ Listo</button>
         <button class="btn-est be-cam   ${p.estado==='camino'?'activo':''}"       onclick="cambiarEstado('${p.id}','camino')">🛵 Camino</button>
         <button class="btn-est be-ent"                                             onclick="cambiarEstado('${p.id}','entregado')">✅ Entregar</button>
         <button class="btn-del" onclick="eliminar('${p.id}')" title="Eliminar">🗑️</button>
@@ -1173,6 +1298,7 @@ function actualizarVacias() {
   const cols = {
     nuevo:       ['📋', 'Sin pedidos nuevos'],
     preparacion: ['🍳', 'Sin pedidos en preparación'],
+    listo:       ['🍽️', 'Sin pedidos listos'],
     camino:      ['📦', 'Sin pedidos en camino'],
   };
   Object.entries(cols).forEach(([estado, [ic, txt]]) => {
@@ -1185,17 +1311,20 @@ function actualizarVacias() {
 }
 
 function actualizarContadores() {
-  let nvo = 0, prep = 0, cam = 0;
+  let nvo = 0, prep = 0, lst = 0, cam = 0;
   pedidos.forEach(p => {
     if      (p.estado==='nuevo')        nvo++;
     else if (p.estado==='preparacion')  prep++;
+    else if (p.estado==='listo')        lst++;
     else if (p.estado==='camino')       cam++;
   });
   document.getElementById('badge-nuevo').textContent = nvo;
   document.getElementById('badge-prep').textContent  = prep;
+  document.getElementById('badge-listo').textContent = lst;
   document.getElementById('badge-cam').textContent   = cam;
   document.getElementById('cnt-nuevo').innerHTML = `🆕 <span class="n">${nvo}</span> nuevos`;
   document.getElementById('cnt-prep').innerHTML  = `🔥 <span class="n">${prep}</span> prep.`;
+  document.getElementById('cnt-listo').innerHTML = `🍽️ <span class="n">${lst}</span> listos`;
   document.getElementById('cnt-cam').innerHTML   = `🛵 <span class="n">${cam}</span> camino`;
 }
 
@@ -1266,7 +1395,7 @@ function renderRegistros() {
     return;
   }
 
-  const icons = { nuevo:'🆕', preparacion:'🔥', camino:'🛵' };
+  const icons = { nuevo:'🆕', preparacion:'🔥', listo:'🍽️', camino:'🛵' };
 
   lista.innerHTML = [...regs].reverse().map(p => {
     const hora = new Date(p.entregado_en || p.actualizado)
@@ -1317,40 +1446,147 @@ async function limpiarRegistros() {
 }
 
 // ═══════════════════════════════════════════════
-// Pedido de prueba
+// Nuevo pedido manual
 // ═══════════════════════════════════════════════
-let np = 1;
-const _nombres = ['María López','Juan García','Ana Martínez','Pedro Ramírez','Sofía Hernández'];
-const _menus = [
-  [{nombre:'Pizza Margarita',cantidad:1,precio:180},{nombre:'Refresco',cantidad:2,precio:30}],
-  [{nombre:'Hamburguesa Doble',cantidad:2,precio:120},{nombre:'Papas Fritas',cantidad:2,precio:45}],
-  [{nombre:'Sushi Variado (8 pzs)',cantidad:1,precio:220},{nombre:'Agua Mineral',cantidad:1,precio:25}],
-  [{nombre:'Tacos al Pastor',cantidad:4,precio:25},{nombre:'Agua de Jamaica',cantidad:1,precio:35}],
-  [{nombre:'Enchiladas Verdes',cantidad:2,precio:95},{nombre:'Agua Fresca',cantidad:2,precio:28}],
-];
+const ENVIO_MANUAL = 3000;          // envío domicilio (CLP)
+let npItems = [];                   // ítems del pedido en construcción
+let npTotalManual = false;          // true si el usuario editó el total a mano
+let npMenuCache = [];               // menú cacheado de /api/menu
 
-async function pedidoPrueba() {
-  const i = (np-1) % 5;
-  const items = _menus[i];
-  const total = items.reduce((s,x) => s + x.precio * x.cantidad, 0);
-  await apiFetch('/api/pedido', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      cliente:   _nombres[i],
-      telefono:  `555-${String(1000+np).padStart(4,'0')}`,
-      direccion: `Av. Ejemplo ${np*10}, Col. Centro`,
-      items, total,
-      notas: np % 3 === 0 ? 'Sin picante por favor' : '',
-    }),
-  });
-  np++;
+function abrirNuevoPedido() {
+  document.getElementById('overlay-nuevo').classList.add('visible');
+  resetNuevoPedido();
+  cargarMenuSelect();
+}
+function cerrarNuevoPedido() {
+  document.getElementById('overlay-nuevo').classList.remove('visible');
+}
+function cerrarSiOverlayNuevo(e) {
+  if (e.target === document.getElementById('overlay-nuevo')) cerrarNuevoPedido();
+}
+
+function resetNuevoPedido() {
+  npItems = [];
+  npTotalManual = false;
+  ['np-cliente','np-telefono','np-direccion','np-notas'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('np-tipo').value = 'domicilio';
+  renderItemsNuevo();
+}
+
+async function cargarMenuSelect() {
+  const sel = document.getElementById('np-menu-select');
+  try {
+    if (!npMenuCache.length) {
+      const r = await apiFetch('/api/menu');
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      npMenuCache = (await r.json()).filter(p => p.disponible && (p.Precio ?? p.precio));
+    }
+    const porCat = {};
+    npMenuCache.forEach((p, i) => {
+      const cat = p.categoria || 'Otros';
+      (porCat[cat] = porCat[cat] || []).push(i);
+    });
+    let html = '<option value="">— Elegir producto del menú —</option>';
+    Object.keys(porCat).sort().forEach(cat => {
+      html += `<optgroup label="${esc(cat)}">`;
+      porCat[cat].forEach(i => {
+        const precio = precioMenu(npMenuCache[i]);
+        html += `<option value="${i}">${esc(npMenuCache[i].producto)} — ${fmt(precio)}</option>`;
+      });
+      html += '</optgroup>';
+    });
+    sel.innerHTML = html;
+  } catch (e) {
+    sel.innerHTML = '<option value="">Error cargando menú</option>';
+  }
+}
+
+function precioMenu(p) {
+  return Number(String(p.Precio ?? p.precio ?? 0).replace(/[^0-9]/g, '')) || 0;
+}
+
+function agregarItemMenu() {
+  const sel = document.getElementById('np-menu-select');
+  if (sel.value === '') return;
+  const p = npMenuCache[Number(sel.value)];
+  npItems.push({ nombre: p.producto, cantidad: 1, precio: precioMenu(p), libre: false });
+  sel.value = '';
+  renderItemsNuevo();
+}
+function agregarLineaLibre() {
+  npItems.push({ nombre: '', cantidad: 1, precio: 0, libre: true });
+  renderItemsNuevo();
+}
+function quitarItem(i) {
+  npItems.splice(i, 1);
+  renderItemsNuevo();
+}
+function setItem(i, campo, val) {
+  npItems[i][campo] = campo === 'nombre' ? val : (Number(val) || 0);
+  recalcTotalNuevo();
+}
+
+function renderItemsNuevo() {
+  const cont = document.getElementById('np-items');
+  if (!npItems.length) {
+    cont.innerHTML = '<div class="np-empty">Aún no hay productos en el pedido</div>';
+  } else {
+    cont.innerHTML = npItems.map((it, i) => `
+      <div class="np-item">
+        <input type="text" value="${esc(it.nombre)}" placeholder="Producto" ${it.libre ? '' : 'readonly'}
+               oninput="setItem(${i},'nombre',this.value)">
+        <input type="number" min="1" value="${it.cantidad}" title="Cantidad"
+               oninput="setItem(${i},'cantidad',this.value)">
+        <input type="number" min="0" value="${it.precio}" title="Precio unitario"
+               oninput="setItem(${i},'precio',this.value)">
+        <button class="np-del" onclick="quitarItem(${i})" title="Quitar">🗑️</button>
+      </div>`).join('');
+  }
+  recalcTotalNuevo();
+}
+
+function recalcTotalNuevo() {
+  const subtotal = npItems.reduce((s, it) => s + (Number(it.precio) || 0) * (Number(it.cantidad) || 0), 0);
+  const envio = document.getElementById('np-tipo').value === 'domicilio' ? ENVIO_MANUAL : 0;
+  document.getElementById('np-total-auto').textContent =
+    envio ? `(subtotal ${fmt(subtotal)} + envío ${fmt(envio)})` : '';
+  if (!npTotalManual) document.getElementById('np-total').value = subtotal + envio;
+}
+
+async function guardarPedidoManual() {
+  const cliente = document.getElementById('np-cliente').value.trim();
+  if (!cliente) { toast('Falta el nombre del cliente', 'error'); return; }
+  const items = npItems
+    .filter(it => (it.nombre || '').trim())
+    .map(it => ({ nombre: it.nombre.trim(), cantidad: Number(it.cantidad) || 1, precio: Number(it.precio) || 0 }));
+  if (!items.length) { toast('Agrega al menos un producto con nombre', 'error'); return; }
+
+  const payload = {
+    cliente,
+    telefono:  document.getElementById('np-telefono').value.trim(),
+    direccion: document.getElementById('np-direccion').value.trim(),
+    items,
+    total:     Number(document.getElementById('np-total').value) || 0,
+    notas:     document.getElementById('np-notas').value.trim(),
+  };
+  try {
+    const r = await apiFetch('/api/pedido-manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    toast('✅ Pedido creado', 'ok');
+    cerrarNuevoPedido();
+  } catch (e) {
+    toast('Error al crear el pedido', 'error');
+  }
 }
 
 // ═══════════════════════════════════════════════
 // Timeline en tarjetas activas
 // ═══════════════════════════════════════════════
-const ETAPA_ICON = { nuevo:'🆕', preparacion:'🔥', camino:'🛵' };
+const ETAPA_ICON = { nuevo:'🆕', preparacion:'🔥', listo:'🍽️', camino:'🛵' };
 
 function renderTimeline(p) {
   const hist = p.historial;

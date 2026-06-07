@@ -384,6 +384,25 @@ app.post('/api/pedido', (req, res) => {
     return res.status(400).json({ error: 'Se requiere el campo "cliente"' });
   }
 
+  const pedido = crearPedido(d);
+  res.status(201).json({ ok: true, pedido_id: pedido.id, pedido });
+});
+
+// ──────────────────────────────────────────────
+// POST /api/pedido-manual — alta manual desde el dashboard
+// (protegido por la sesión del panel, no por WEBHOOK_SECRET)
+// ──────────────────────────────────────────────
+app.post('/api/pedido-manual', (req, res) => {
+  const d = req.body;
+  if (!d.cliente) {
+    return res.status(400).json({ error: 'Se requiere el campo "cliente"' });
+  }
+  const pedido = crearPedido({ ...d, origen: 'manual' });
+  res.status(201).json({ ok: true, pedido_id: pedido.id, pedido });
+});
+
+// Crea, guarda y propaga un pedido nuevo. Usado por /api/pedido (n8n) y /api/pedido-manual (panel).
+function crearPedido(d) {
   const id = d.pedido_id || `PED-${String(contadorId++).padStart(4, '0')}`;
   const pedido = {
     id,
@@ -394,6 +413,7 @@ app.post('/api/pedido', (req, res) => {
     total:       d.total != null ? Number(d.total) : (d.monto != null ? Number(d.monto) : calcularTotal(d.items || d.productos || [])),
     notas:            d.notas || d.observaciones || '',
     telegram_chat_id: d.telegram_chat_id ? String(d.telegram_chat_id) : '',
+    origen:      d.origen || 'bot',
     estado:      'nuevo',
     recibido:    new Date().toISOString(),
     actualizado: new Date().toISOString(),
@@ -403,9 +423,9 @@ app.post('/api/pedido', (req, res) => {
   pedidos.set(id, pedido);
   guardarDatos();
   enviarEvento('nuevo_pedido', pedido);
-  console.log(`✅ Pedido recibido: ${id} para ${pedido.cliente}`);
-  res.status(201).json({ ok: true, pedido_id: id, pedido });
-});
+  console.log(`✅ Pedido recibido: ${id} para ${pedido.cliente}${pedido.origen === 'manual' ? ' (manual)' : ''}`);
+  return pedido;
+}
 
 // ──────────────────────────────────────────────
 // PUT /api/pedido/:id/estado
@@ -414,7 +434,7 @@ app.put('/api/pedido/:id/estado', async (req, res) => {
   const { id } = req.params;
   const { estado } = req.body;
 
-  const estadosValidos = ['nuevo', 'preparacion', 'camino', 'entregado'];
+  const estadosValidos = ['nuevo', 'preparacion', 'listo', 'camino', 'entregado'];
   if (!estadosValidos.includes(estado)) {
     return res.status(400).json({ error: `Estado inválido. Usar: ${estadosValidos.join(', ')}` });
   }
