@@ -673,10 +673,12 @@
       background: var(--surface);
       position: sticky;
       bottom: 0;
+      display: flex;
+      gap: 10px;
     }
 
     .btn-limpiar {
-      width: 100%;
+      flex: 1;
       padding: 10px;
       background: var(--red-dim);
       border: 1px solid rgba(248,113,113,.25);
@@ -689,6 +691,21 @@
       transition: all .15s;
     }
     .btn-limpiar:hover { background: rgba(248,113,113,.22); }
+
+    .btn-descargar {
+      flex: 1;
+      padding: 10px;
+      background: var(--green-dim);
+      border: 1px solid rgba(52,211,153,.25);
+      color: var(--green);
+      border-radius: var(--radius-sm);
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .btn-descargar:hover { background: rgba(52,211,153,.22); }
 
     /* ────────────────────────────────────────────
        TOASTS
@@ -1004,7 +1021,8 @@
     </div>
 
     <div class="panel-footer">
-      <button class="btn-limpiar" onclick="limpiarRegistros()">🗑️ Limpiar todos los registros del día</button>
+      <button class="btn-descargar" onclick="descargarRegistros()">⬇️ Descargar CSV</button>
+      <button class="btn-limpiar" onclick="limpiarRegistros()">🗑️ Limpiar registros del día</button>
     </div>
   </div>
 </div>
@@ -1447,6 +1465,36 @@ function renderRegistros() {
 async function limpiarRegistros() {
   if (!confirm('¿Limpiar todos los registros del día?')) return;
   await apiFetch('/api/registros', { method: 'DELETE' });
+}
+
+function descargarRegistros() {
+  const regs = regDatos.registros || [];
+  if (!regs.length) { toast('No hay registros para descargar', 'error'); return; }
+
+  const SEP = ';'; // separador amigable con Excel en español
+  const q = (v) => `"${(v == null ? '' : String(v)).replace(/"/g, '""')}"`;
+  const itemsTxt = (p) => Array.isArray(p.items)
+    ? p.items.map(i => `${i.cantidad || 1}x ${i.nombre || i.name || 'Item'}`).join(' · ')
+    : (p.items ? String(p.items) : '');
+  const fechaHora = (iso) => iso ? new Date(iso).toLocaleString('es-CL') : '';
+
+  const headers = ['ID','Cliente','Teléfono','Dirección','Productos','Total','Notas','Origen','Recibido','Entregado'];
+  const filas = regs.map(p => [
+    p.id, p.cliente, p.telefono, p.direccion, itemsTxt(p),
+    p.total, p.notas, p.origen || 'bot', fechaHora(p.recibido), fechaHora(p.entregado_en),
+  ].map(q).join(SEP));
+
+  const csv = '﻿' + [headers.map(q).join(SEP), ...filas].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `registros-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast('⬇️ Registros descargados', 'ok');
 }
 
 // ═══════════════════════════════════════════════
